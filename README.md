@@ -41,4 +41,12 @@ Desarrollada bajo arquitectura **MVC** y utilizando **Node.js**, **Express** y *
 
 ---
 
+### 👥 Autores
+
+| Nombre | Rol | GitHub |
+|--------|------|---------|
+| **Ariel Fernández** | Desarrollador Backend y Coordinador del proyecto | 🔗 [@Arhiell](https://github.com/Arhiell) |
+| **Leonel Fernández** | Desarrollador Frontend y Tester | 🔗 [@fernandez-leonel](https://github.com/fernandez-leonel) |
+
+
 > © 2025 **Feraytek Systems** – Proyecto académico desarrollado con fines educativos y de integración tecnológica.

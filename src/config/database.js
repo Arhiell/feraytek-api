@@ -21,5 +21,12 @@ const pool = mysql.createPool({
   connectionLimit: 10,
 });
 
+// Sirve para verificar que las variables de entorno se están leyendo correctamente
+console.log(
+  "🧪 Variables de entorno cargadas:",
+  process.env.DB_USER,
+  process.env.DB_NAME
+);
+
 // Exportar el pool para usarlo en modelos y servicios
 module.exports = pool;

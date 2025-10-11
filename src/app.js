@@ -1,30 +1,32 @@
-/**
- * =============================================
- * Archivo: app.js
- * Descripción: Configura la aplicación Express con
- * middlewares globales, rutas y seguridad.
- * ===============================================
- */
+// ======================================================================
+// Configura middlewares globales y registra las rutas del módulo Productos.
+// ======================================================================
 
-// Importar dependencias para configurar el servidor
 const express = require("express");
 const cors = require("cors");
-const helmet = require("helmet");
 const morgan = require("morgan");
-require("dotenv").config();
+const productoRoutes = require("./routes/producto.routes");
 
+// Crear instancia de Express para la aplicación principal
 const app = express();
 
-// Middlewares globales
-app.use(express.json());
+// ----------------------------------------------------------------------
+// Middlewares globales en que se aplican a todas las rutas
+// ----------------------------------------------------------------------
 app.use(cors());
-app.use(helmet());
+app.use(express.json());
 app.use(morgan("dev"));
 
-// Ruta de prueba inicial solo es de prueba si funciona todo OK
+// ----------------------------------------------------------------------
+// Rutas principales que nos traen los endpoints de cada módulo
+// ----------------------------------------------------------------------
+app.use("/api/productos", productoRoutes);
+
+// ----------------------------------------------------------------------
+// Ruta de prueba raíz asi sabemos que el servidor está activo
+// ----------------------------------------------------------------------
 app.get("/", (req, res) => {
-  res.send("🚀 API Feraytek funcionando correctamente.");
+  res.json({ message: "API Feraytek - Servidor activo, Don Señor ARIELO" });
 });
 
-// Exportar la instancia de la app para ser usada en server.js
 module.exports = app;

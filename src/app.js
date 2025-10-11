@@ -1,32 +1,37 @@
-// ======================================================================
-// Configura middlewares globales y registra las rutas del módulo Productos.
-// ======================================================================
+// APP PRINCIPAL - Configura middlewares globales y registra las rutas
+// ----------------------------------------------------------------------
+// Este archivo inicializa Express, aplica middlewares globales
+// (CORS, JSON, logging) y registra los módulos del sistema (productos,
+// carrito, pedidos, etc.).
 
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const productoRoutes = require("./routes/producto.routes");
 
-// Crear instancia de Express para la aplicación principal
+// Rutas principales de los módulos
+const productoRoutes = require("./routes/producto.routes");
+const carritoRoutes = require("./routes/carrito.routes");
+const pedidoRoutes = require("./routes/pedido.routes");
+
+// Inicialización de la aplicación principal
 const app = express();
 
-// Rutas y controladores para el carrito de compras
-const carritoRoutes = require("./routes/carrito.routes");
+// Middlewares globales (se aplican a todas las rutas)
 
-// Middlewares globales en que se aplican a todas las rutas
-app.use(cors());
-app.use(express.json());
-app.use(morgan("dev"));
+app.use(cors()); // Habilita CORS (permite solicitudes desde otros dominios)
+app.use(express.json()); // Permite recibir y procesar JSON en el cuerpo de las peticiones
+app.use(morgan("dev")); // Muestra logs de las solicitudes HTTP en consola (modo desarrollo)
 
-// Rutas principales que nos traen los endpoints de cada módulo
-app.use("/api/productos", productoRoutes);
+// Registro de rutas principales del sistema
+app.use("/api/productos", productoRoutes); // Endpoints de gestión de productos
+app.use("/api/carrito", carritoRoutes); // Endpoints del carrito de compras
+app.use("/api/pedidos", pedidoRoutes); // Endpoints de pedidos (creación, listado, estado)
 
-// Ruta de prueba raíz asi sabemos que el servidor está activo
+// Ruta raíz de prueba (para verificar que el servidor está activo)
 app.get("/", (req, res) => {
-  res.json({ message: "API Feraytek - Servidor activo, Don Señor ARIELO" });
+  res.json({
+    message: " API Feraytek - Servidor activo, Don Señor ARIELO ",
+  });
 });
-
-// Rutas y controladores para el carrito de compras
-app.use("/api/carrito", carritoRoutes);
 
 module.exports = app;

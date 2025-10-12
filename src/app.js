@@ -11,6 +11,7 @@ const productoRoutes = require("./routes/producto.routes");
 const carritoRoutes = require("./routes/carrito.routes");
 const pedidoRoutes = require("./routes/pedido.routes");
 const pagoRoutes = require("./routes/pago.routes");
+const envioRoutes = require("./routes/envio.routes");
 
 // Inicialización de la aplicación principal
 const app = express();
@@ -25,6 +26,7 @@ app.use("/api/productos", productoRoutes);
 app.use("/api/carrito", carritoRoutes);
 app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/pagos", pagoRoutes);
+app.use("/api/envios", envioRoutes);
 
 // Ruta raíz de prueba (para verificar que el servidor está activo)
 app.get("/", (req, res) => {

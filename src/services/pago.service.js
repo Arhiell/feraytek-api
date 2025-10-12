@@ -1,10 +1,6 @@
-// ======================================================================
-// MÓDULO: Pago Service
-// ----------------------------------------------------------------------
 // Contiene la lógica de negocio para la gestión de pagos,
 // conectando la base de datos MySQL (modelo Pago) con la API de Mercado Pago.
 // Se encarga de crear preferencias, procesar respuestas y actualizar estados.
-// ======================================================================
 
 const { MercadoPagoConfig, Preference } = require("mercadopago");
 const pagoModel = require("../models/pago.model");
@@ -12,18 +8,16 @@ const pedidoModel = require("../models/pedido.model"); // opcional
 
 require("dotenv").config();
 
-// 🔹 Configuración del SDK de Mercado Pago
+// Configuración del SDK de Mercado Pago
 const mpClient = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
   options: { timeout: 5000 },
 });
 
-// ======================================================================
-// 🧾 Crear preferencia de pago (modo sandbox)
+// Crear preferencia de pago (modo sandbox)
 // ----------------------------------------------------------------------
 // Recibe la información del pedido y crea una preferencia (objeto de pago)
 // en el entorno de prueba (sandbox). Devuelve el link simulado de pago.
-// ======================================================================
 async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
   try {
     // Validamos que no exista un pago previo
@@ -56,7 +50,6 @@ async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
     const preferenceInstance = new Preference(mpClient);
     const response = await preferenceInstance.create({ body: preference });
 
-    // ✅ En SDK v2+ los datos vienen directamente, no dentro de response.body
     const id_transaccion = response.id;
     const raw_gateway_json = response;
 
@@ -91,12 +84,10 @@ async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
   }
 }
 
-// ======================================================================
-// 🔄 Procesar notificación del Webhook (callback de Mercado Pago)
+// Procesar notificación del Webhook (callback de Mercado Pago)
 // ----------------------------------------------------------------------
 // Mercado Pago llama automáticamente a este endpoint cuando cambia el
 // estado de un pago. Actualiza el registro en la tabla `pagos`.
-// ======================================================================
 async function procesarWebhook(data) {
   try {
     const { data: webhookData } = data;
@@ -131,26 +122,20 @@ async function procesarWebhook(data) {
   }
 }
 
-// ======================================================================
-// 📋 Consultar pagos registrados
-// ======================================================================
+// Consultar pagos registrados
 async function obtenerTodosLosPagos() {
   const pagos = await pagoModel.listarPagos();
   return pagos;
 }
 
-// ======================================================================
-// 🔍 Obtener detalle de un pago por ID
-// ======================================================================
+// Obtener detalle de un pago por ID
 async function obtenerPagoPorId(id_pago) {
   const pago = await pagoModel.obtenerPagoPorId(id_pago);
   if (!pago) throw new Error("Pago no encontrado.");
   return pago;
 }
 
-// ======================================================================
-// 🧮 Actualizar estado de pago (manual o administrativo)
-// ======================================================================
+// Actualizar estado de pago (manual o administrativo)
 async function actualizarEstadoPago(id_pago, estado) {
   return await pagoModel.actualizarEstadoPago(id_pago, estado);
 }

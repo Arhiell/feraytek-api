@@ -13,7 +13,10 @@ const pedidoRoutes = require("./routes/pedido.routes");
 const pagoRoutes = require("./routes/pago.routes");
 const envioRoutes = require("./routes/envio.routes");
 const descuentoRoutes = require("./routes/descuento.routes");
+<<<<<<< HEAD
 const facturaRoutes = require("./routes/factura.routes");
+=======
+>>>>>>> 0893e285dbebb423aca67bf454acf3ba04c54111
 
 // Inicialización de la aplicación principal
 const app = express();
@@ -30,7 +33,10 @@ app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/pagos", pagoRoutes);
 app.use("/api/envios", envioRoutes);
 app.use("/api/descuentos", descuentoRoutes);
+<<<<<<< HEAD
 app.use("/api/facturas", facturaRoutes);
+=======
+>>>>>>> 0893e285dbebb423aca67bf454acf3ba04c54111
 
 // Ruta raíz de prueba (para verificar que el servidor está activo)
 app.get("/", (req, res) => {

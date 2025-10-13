@@ -9,6 +9,7 @@ const morgan = require("morgan");
 // Rutas principales de los módulos
 const productoRoutes = require("./routes/producto.routes");
 const productoCategoriaRoutes = require("./routes/productoCategoria.routes");
+const variantesProductoRoutes = require("./routes/variantesProducto.routes");
 const carritoRoutes = require("./routes/carrito.routes");
 const pedidoRoutes = require("./routes/pedido.routes");
 const pagoRoutes = require("./routes/pago.routes");
@@ -27,6 +28,7 @@ app.use(morgan("dev")); // Muestra logs de las solicitudes HTTP en consola (modo
 // Registro de rutas principales del sistema
 app.use("/api/productos", productoRoutes);
 app.use("/api/productos-categorias", productoCategoriaRoutes);
+app.use("/api/variantes-producto", variantesProductoRoutes);
 app.use("/api/carrito", carritoRoutes);
 app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/pagos", pagoRoutes);

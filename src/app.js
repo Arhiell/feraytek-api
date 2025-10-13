@@ -14,6 +14,7 @@ const carritoRoutes = require("./routes/carrito.routes");
 const pedidoRoutes = require("./routes/pedido.routes");
 const pagoRoutes = require("./routes/pago.routes");
 const envioRoutes = require("./routes/envio.routes");
+const historialPedidosRoutes = require("./routes/historialPedidos.routes");
 const descuentoRoutes = require("./routes/descuento.routes");
 const facturaRoutes = require("./routes/factura.routes");
 
@@ -33,6 +34,7 @@ app.use("/api/carrito", carritoRoutes);
 app.use("/api/pedidos", pedidoRoutes);
 app.use("/api/pagos", pagoRoutes);
 app.use("/api/envios", envioRoutes);
+app.use("/api/historial_pedidos", historialPedidosRoutes);
 app.use("/api/descuentos", descuentoRoutes);
 app.use("/api/facturas", facturaRoutes);
 

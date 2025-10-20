@@ -29,12 +29,12 @@ const ResenaModel = {
    */
   async obtenerPorProducto(id_producto) {
     const sql = `
-      SELECT r.id_reseña, r.calificacion, r.comentario, r.fecha_resena,
+      SELECT r.id_resena, r.calificacion, r.comentario, r.fecharesena,
              u.nombre_usuario
       FROM resenas r
       JOIN usuarios u ON r.id_usuario = u.id_usuario
       WHERE r.id_producto = ?
-      ORDER BY r.fecha_resena DESC
+      ORDER BY r.fecharesena DESC
     `;
     const [rows] = await db.execute(sql, [id_producto]);
     return rows;
@@ -45,13 +45,13 @@ const ResenaModel = {
    */
   async obtenerTodas() {
     const sql = `
-      SELECT r.id_reseña, r.id_producto, p.nombre AS producto,
+      SELECT r.id_resena, r.id_producto, p.nombre AS producto,
              r.id_usuario, u.nombre_usuario, r.calificacion,
-             r.comentario, r.fecha_resena
+             r.comentario, r.fecharesena
       FROM resenas r
       JOIN usuarios u ON r.id_usuario = u.id_usuario
       JOIN productos p ON r.id_producto = p.id_producto
-      ORDER BY r.fecha_resena DESC
+      ORDER BY r.fecharesena DESC
     `;
     const [rows] = await db.execute(sql);
     return rows;
@@ -64,8 +64,8 @@ const ResenaModel = {
   async actualizar(id_reseña, id_usuario, calificacion, comentario) {
     const sql = `
       UPDATE resenas
-      SET calificacion = ?, comentario = ?, fecha_resena = NOW()
-      WHERE id_reseña = ? AND id_usuario = ?
+      SET calificacion = ?, comentario = ?, fecharesena = NOW()
+      WHERE id_resena = ? AND id_usuario = ?
     `;
     const [result] = await db.execute(sql, [
       calificacion,

@@ -120,12 +120,14 @@ async function eliminarItem(id_carrito, id_producto, id_variante) {
 // Vaciar carrito completo
 // ----------------------------------------------------------------------
 
-// Elimina todos los ítems del carrito basado en id_carrito
+// Elimina todos los ítems del carrito pero mantiene el carrito activo
 async function vaciarCarrito(id_carrito) {
-  // Eliminar todos los ítems del carrito para ser mas sencillo
+  // Eliminar todos los ítems del carrito
   await pool.query(`DELETE FROM carrito_detalle WHERE id_carrito = ?`, [
     id_carrito,
-  ]); // Parámetro para la consulta segura (evita SQL Injection
+  ]); // Parámetro para la consulta segura (evita SQL Injection)
+  
+  // El carrito permanece activo y vacío, listo para nuevos productos
   return true; // Si llega aquí, se vació el carrito exitosamente
 }
 

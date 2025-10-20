@@ -66,6 +66,15 @@ async function actualizarEstadoPago(id_pago, nuevoEstado) {
   return { id_pago, estado_pago: nuevoEstado };
 }
 
+// Buscar un pago por su ID de transacción de Mercado Pago
+// Permite encontrar el pago específico cuando llega un webhook.
+async function obtenerPagoPorTransaccion(id_transaccion) {
+  const [rows] = await pool.query(`SELECT * FROM pagos WHERE id_transaccion = ?`, [
+    id_transaccion,
+  ]);
+  return rows[0];
+}
+
 // Buscar un pago por su ID de pedido
 // Permite verificar si un pedido ya tiene un pago asociado (1:1).
 async function obtenerPagoPorPedido(id_pedido) {
@@ -92,6 +101,7 @@ module.exports = {
   listarPagos,
   obtenerPagoPorId,
   actualizarEstadoPago,
+  obtenerPagoPorTransaccion,
   obtenerPagoPorPedido,
   registrarWebhook,
 };

@@ -37,11 +37,10 @@ async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
         },
       ],
       back_urls: {
-        success: process.env.MP_SUCCESS_URL,
-        failure: process.env.MP_FAILURE_URL,
-        pending: process.env.MP_PENDING_URL,
+        success: "http://localhost:3000/pago/success",
+        failure: "http://localhost:3000/pago/failure", 
+        pending: "http://localhost:3000/pago/pending",
       },
-      auto_return: "approved",
       notification_url: "http://localhost:3000/api/pagos/webhook", // Webhook local (modo sandbox)
       binary_mode: true, // El pago se aprueba o rechaza automáticamente
     };
@@ -96,24 +95,31 @@ async function procesarWebhook(data) {
     if (!id_transaccion)
       throw new Error("Webhook sin ID de transacción válido.");
 
-    // Se busca el pago correspondiente en la base de datos
-    const [pago] = await pagoModel.listarPagos();
-    const pagoEncontrado =
-      pago && pago.id_transaccion === id_transaccion ? pago : null;
+    // Se busca el pago correspondiente en la base de datos usando el id_transaccion
+    const pagoEncontrado = await pagoModel.obtenerPagoPorTransaccion(id_transaccion);
 
     if (!pagoEncontrado) {
       console.warn("Webhook recibido pero no se encontró el pago asociado.");
       return { ok: false, message: "Pago no encontrado en la base de datos." };
     }
 
-    // Determinar nuevo estado (simulado en sandbox)
-    const nuevoEstado = webhookData?.status || "pendiente";
+    // Determinar nuevo estado - mapear estados de Mercado Pago a nuestros estados
+    let nuevoEstado = "pendiente";
+    const statusFromWebhook = data?.status || webhookData?.status;
+    
+    if (statusFromWebhook === "approved") {
+      nuevoEstado = "aprobado";
+    } else if (statusFromWebhook === "rejected") {
+      nuevoEstado = "rechazado";
+    } else if (statusFromWebhook === "cancelled") {
+      nuevoEstado = "cancelado";
+    }
 
     // Actualizar estado del pago
     await pagoModel.actualizarEstadoPago(pagoEncontrado.id_pago, nuevoEstado);
 
     // Registrar datos crudos del webhook
-    await pagoModel.registrarWebhook(pagoEncontrado.id_pago, webhookData);
+    await pagoModel.registrarWebhook(pagoEncontrado.id_pago, data);
 
     return { ok: true, message: "Webhook procesado correctamente." };
   } catch (error) {

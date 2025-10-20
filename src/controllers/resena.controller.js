@@ -4,7 +4,7 @@ class ResenaController {
   static async crear(req, res) {
     try {
       const { id_producto, calificacion, comentario } = req.body;
-      const id_usuario = req.user.id_usuario; // JWT Middleware
+      const id_usuario = req.user.id; // JWT Middleware - corregido de id_usuario a id
       const id_reseña = await ResenaService.crear(
         id_usuario,
         id_producto,
@@ -45,7 +45,7 @@ class ResenaController {
     try {
       const { id_reseña } = req.params;
       const { calificacion, comentario } = req.body;
-      const id_usuario = req.user.id_usuario;
+      const id_usuario = req.user.id; // Corregido de id_usuario a id
       await ResenaService.actualizar(
         id_reseña,
         id_usuario,

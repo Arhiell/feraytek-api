@@ -45,6 +45,16 @@ async function agregarProductoAlCarrito(id_usuario, datosProducto) {
     throw new Error("Datos de producto inválidos o cantidad no válida");
   }
 
+  // Validar que precio_unitario sea requerido y válido
+  if (!precio_unitario || precio_unitario <= 0) {
+    throw new Error("El precio_unitario es requerido y debe ser mayor a 0");
+  }
+
+  // Validar que iva_porcentaje sea requerido y válido
+  if (iva_porcentaje === undefined || iva_porcentaje === null || iva_porcentaje < 0) {
+    throw new Error("El iva_porcentaje es requerido y debe ser mayor o igual a 0");
+  }
+
   // Cálculo del monto del IVA
   const iva_monto = (precio_unitario * (iva_porcentaje / 100)).toFixed(2);
 

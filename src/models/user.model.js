@@ -179,6 +179,145 @@ async function remove(id) {
   return result.affectedRows > 0;
 }
 
+// ----------------------------------------------------------------------
+// FUNCIONES AVANZADAS PARA SUPERADMIN
+// ----------------------------------------------------------------------
+
+// Obtener usuarios con filtros avanzados
+async function getAllWithFilters(filters = {}) {
+  let query = `
+    SELECT id_usuario, nombre_usuario, email, rol, estado, fecha_registro, ultimo_login
+    FROM usuarios
+    WHERE 1=1
+  `;
+  const params = [];
+
+  // Filtro por rol
+  if (filters.rol) {
+    query += ` AND rol = ?`;
+    params.push(filters.rol);
+  }
+
+  // Filtro por estado
+  if (filters.estado) {
+    query += ` AND estado = ?`;
+    params.push(filters.estado);
+  }
+
+  // Filtro por fecha de registro (desde)
+  if (filters.fecha_desde) {
+    query += ` AND DATE(fecha_registro) >= ?`;
+    params.push(filters.fecha_desde);
+  }
+
+  // Filtro por fecha de registro (hasta)
+  if (filters.fecha_hasta) {
+    query += ` AND DATE(fecha_registro) <= ?`;
+    params.push(filters.fecha_hasta);
+  }
+
+  // Búsqueda por nombre o email
+  if (filters.busqueda) {
+    query += ` AND (nombre_usuario LIKE ? OR email LIKE ?)`;
+    params.push(`%${filters.busqueda}%`, `%${filters.busqueda}%`);
+  }
+
+  // Ordenamiento
+  const orderBy = filters.orden || 'fecha_registro';
+  const direction = filters.direccion || 'DESC';
+  query += ` ORDER BY ${orderBy} ${direction}`;
+
+  // Paginación
+  if (filters.limite) {
+    const offset = (filters.pagina - 1) * filters.limite || 0;
+    query += ` LIMIT ? OFFSET ?`;
+    params.push(parseInt(filters.limite), offset);
+  }
+
+  const [rows] = await pool.query(query, params);
+  return rows;
+}
+
+// Cambiar rol de usuario
+async function updateRole(id, newRole) {
+  const [result] = await pool.query(
+    `UPDATE usuarios SET rol = ? WHERE id_usuario = ?`,
+    [newRole, id]
+  );
+  return result.affectedRows > 0;
+}
+
+// Activar/desactivar cuenta de usuario
+async function updateStatus(id, newStatus) {
+  const [result] = await pool.query(
+    `UPDATE usuarios SET estado = ? WHERE id_usuario = ?`,
+    [newStatus, id]
+  );
+  return result.affectedRows > 0;
+}
+
+// Resetear contraseña de usuario (genera una temporal)
+async function resetPassword(id, newPassword) {
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const [result] = await pool.query(
+    `UPDATE usuarios SET password = ? WHERE id_usuario = ?`,
+    [hashedPassword, id]
+  );
+  return result.affectedRows > 0;
+}
+
+// Obtener estadísticas de usuarios
+async function getUserStats() {
+  const [stats] = await pool.query(`
+    SELECT 
+      COUNT(*) as total_usuarios,
+      SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) as usuarios_activos,
+      SUM(CASE WHEN estado = 'inactivo' THEN 1 ELSE 0 END) as usuarios_inactivos,
+      SUM(CASE WHEN rol = 'cliente' THEN 1 ELSE 0 END) as clientes,
+      SUM(CASE WHEN rol = 'admin' THEN 1 ELSE 0 END) as admins,
+      SUM(CASE WHEN rol = 'superadmin' THEN 1 ELSE 0 END) as superadmins,
+      SUM(CASE WHEN DATE(fecha_registro) = CURDATE() THEN 1 ELSE 0 END) as registros_hoy,
+      SUM(CASE WHEN DATE(fecha_registro) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as registros_semana,
+      SUM(CASE WHEN DATE(ultimo_login) = CURDATE() THEN 1 ELSE 0 END) as logins_hoy
+    FROM usuarios
+  `);
+  return stats[0];
+}
+
+// Contar total de usuarios con filtros (para paginación)
+async function countWithFilters(filters = {}) {
+  let query = `SELECT COUNT(*) as total FROM usuarios WHERE 1=1`;
+  const params = [];
+
+  if (filters.rol) {
+    query += ` AND rol = ?`;
+    params.push(filters.rol);
+  }
+
+  if (filters.estado) {
+    query += ` AND estado = ?`;
+    params.push(filters.estado);
+  }
+
+  if (filters.fecha_desde) {
+    query += ` AND DATE(fecha_registro) >= ?`;
+    params.push(filters.fecha_desde);
+  }
+
+  if (filters.fecha_hasta) {
+    query += ` AND DATE(fecha_registro) <= ?`;
+    params.push(filters.fecha_hasta);
+  }
+
+  if (filters.busqueda) {
+    query += ` AND (nombre_usuario LIKE ? OR email LIKE ?)`;
+    params.push(`%${filters.busqueda}%`, `%${filters.busqueda}%`);
+  }
+
+  const [result] = await pool.query(query, params);
+  return result[0].total;
+}
+
 module.exports = {
   getAll,
   getById,
@@ -188,5 +327,12 @@ module.exports = {
   update,
   updatePassword,
   updateLastLogin,
-  remove
+  remove,
+  // Funciones avanzadas
+  getAllWithFilters,
+  updateRole,
+  updateStatus,
+  resetPassword,
+  getUserStats,
+  countWithFilters
 };

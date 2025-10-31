@@ -5,6 +5,7 @@
 const express = require("express");
 const router = express.Router();
 const CarritoController = require("../controllers/carrito.controller");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 
 // ----------------------------------------------------------------------
 // Documentación rápida de endpoints:
@@ -14,10 +15,17 @@ const CarritoController = require("../controllers/carrito.controller");
 // DELETE /api/carrito          -> Vacía el carrito completo
 // ----------------------------------------------------------------------
 
-// Rutas y controladores para el carrito de compras para sus CRUD
-router.get("/", CarritoController.listar);
-router.post("/", CarritoController.agregar);
-router.delete("/item", CarritoController.eliminar);
-router.delete("/", CarritoController.vaciar);
+// Rutas del carrito para usuarios autenticados
+router.get("/", verifyToken, CarritoController.listar);
+router.post("/", verifyToken, CarritoController.agregar);
+router.delete("/item", verifyToken, CarritoController.eliminar);
+router.delete("/", verifyToken, CarritoController.vaciar);
+
+// Rutas administrativas del carrito
+router.get("/admin/todos", verifyToken, isAdmin, CarritoController.listarTodos);
+router.get("/admin/usuario/:id", verifyToken, isAdmin, CarritoController.verCarritoUsuario);
+router.get("/admin/abandonados", verifyToken, isAdmin, CarritoController.carritosAbandonados);
+router.delete("/admin/limpiar-abandonados", verifyToken, isAdmin, CarritoController.limpiarAbandonados);
+router.get("/admin/estadisticas", verifyToken, isAdmin, CarritoController.estadisticasCarritos);
 
 module.exports = router;

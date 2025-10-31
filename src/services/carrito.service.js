@@ -132,6 +132,34 @@ async function vaciar(id_usuario) {
   return true;
 }
 
+// ----------------------------------------------------------------------
+// FUNCIONES ADMINISTRATIVAS
+// ----------------------------------------------------------------------
+
+// Listar todos los carritos del sistema (solo para admins)
+async function listarTodosLosCarritos() {
+  const carritos = await Carrito.getTodosLosCarritos();
+  return carritos;
+}
+
+// Obtener carritos abandonados (sin actividad por X días)
+async function obtenerCarritosAbandonados(dias = 7) {
+  const carritos = await Carrito.getCarritosAbandonados(dias);
+  return carritos;
+}
+
+// Limpiar carritos abandonados
+async function limpiarCarritosAbandonados(dias = 30) {
+  const eliminados = await Carrito.eliminarCarritosAbandonados(dias);
+  return { eliminados };
+}
+
+// Obtener estadísticas de carritos
+async function obtenerEstadisticas() {
+  const estadisticas = await Carrito.getEstadisticasCarritos();
+  return estadisticas;
+}
+
 // Exportar las funciones del servicio
 module.exports = {
   obtenerOCrearCarrito,
@@ -139,4 +167,9 @@ module.exports = {
   listarItems,
   eliminarProducto,
   vaciar,
+  // Funciones administrativas
+  listarTodosLosCarritos,
+  obtenerCarritosAbandonados,
+  limpiarCarritosAbandonados,
+  obtenerEstadisticas,
 };

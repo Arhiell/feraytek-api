@@ -131,6 +131,110 @@ async function vaciarCarrito(id_carrito) {
   return true; // Si llega aquí, se vació el carrito exitosamente
 }
 
+// ----------------------------------------------------------------------
+// FUNCIONES ADMINISTRATIVAS
+// ----------------------------------------------------------------------
+
+// Obtener todos los carritos del sistema con información del usuario
+async function getTodosLosCarritos() {
+  const [rows] = await pool.query(
+    `SELECT c.*, u.nombre_usuario, u.email, u.rol,
+            COUNT(cd.id_detalle) as total_items,
+            COALESCE(SUM(cd.cantidad * cd.precio_unitario), 0) as valor_total
+     FROM carrito c
+     INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
+     LEFT JOIN carrito_detalle cd ON c.id_carrito = cd.id_carrito
+     GROUP BY c.id_carrito, u.id_usuario
+     ORDER BY c.updated_at DESC`
+  );
+  return rows;
+}
+
+// Obtener carritos abandonados (sin actividad por X días)
+async function getCarritosAbandonados(dias) {
+  const [rows] = await pool.query(
+    `SELECT c.*, u.nombre_usuario, u.email,
+            COUNT(cd.id_detalle) as total_items,
+            COALESCE(SUM(cd.cantidad * cd.precio_unitario), 0) as valor_total,
+            DATEDIFF(NOW(), c.updated_at) as dias_inactivo
+     FROM carrito c
+     INNER JOIN usuarios u ON c.id_usuario = u.id_usuario
+     LEFT JOIN carrito_detalle cd ON c.id_carrito = cd.id_carrito
+     WHERE c.estado = 'activo' 
+       AND DATEDIFF(NOW(), c.updated_at) > ?
+       AND EXISTS (SELECT 1 FROM carrito_detalle WHERE id_carrito = c.id_carrito)
+     GROUP BY c.id_carrito, u.id_usuario
+     ORDER BY c.updated_at ASC`,
+    [dias]
+  );
+  return rows;
+}
+
+// Eliminar carritos abandonados
+async function eliminarCarritosAbandonados(dias) {
+  // Primero eliminar los detalles de los carritos abandonados
+  await pool.query(
+    `DELETE cd FROM carrito_detalle cd
+     INNER JOIN carrito c ON cd.id_carrito = c.id_carrito
+     WHERE c.estado = 'activo' 
+       AND DATEDIFF(NOW(), c.updated_at) > ?`,
+    [dias]
+  );
+
+  // Luego eliminar los carritos abandonados
+  const [result] = await pool.query(
+    `DELETE FROM carrito 
+     WHERE estado = 'activo' 
+       AND DATEDIFF(NOW(), updated_at) > ?`,
+    [dias]
+  );
+
+  return result.affectedRows;
+}
+
+// Obtener estadísticas de carritos
+async function getEstadisticasCarritos() {
+  // Estadísticas generales
+  const [general] = await pool.query(
+    `SELECT 
+       COUNT(*) as total_carritos,
+       COUNT(CASE WHEN estado = 'activo' THEN 1 END) as carritos_activos,
+       COUNT(CASE WHEN estado = 'completado' THEN 1 END) as carritos_completados,
+       COUNT(CASE WHEN estado = 'abandonado' THEN 1 END) as carritos_abandonados
+     FROM carrito`
+  );
+
+  // Estadísticas de productos en carritos
+  const [productos] = await pool.query(
+    `SELECT 
+       COUNT(DISTINCT cd.id_carrito) as carritos_con_productos,
+       SUM(cd.cantidad) as total_productos_en_carritos,
+       AVG(cd.cantidad) as promedio_productos_por_carrito,
+       COALESCE(SUM(cd.cantidad * cd.precio_unitario), 0) as valor_total_carritos
+     FROM carrito_detalle cd
+     INNER JOIN carrito c ON cd.id_carrito = c.id_carrito
+     WHERE c.estado = 'activo'`
+  );
+
+  // Carritos por fecha (últimos 30 días)
+  const [porFecha] = await pool.query(
+    `SELECT 
+       DATE(created_at) as fecha,
+       COUNT(*) as carritos_creados
+     FROM carrito 
+     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+     GROUP BY DATE(created_at)
+     ORDER BY fecha DESC
+     LIMIT 30`
+  );
+
+  return {
+    general: general[0],
+    productos: productos[0],
+    carritos_por_fecha: porFecha
+  };
+}
+
 // Modulo exporta las funciones para ser usadas en otros archivos.
 module.exports = {
   getCarritoActivo,
@@ -139,4 +243,9 @@ module.exports = {
   getItems,
   eliminarItem,
   vaciarCarrito,
+  // Funciones administrativas
+  getTodosLosCarritos,
+  getCarritosAbandonados,
+  eliminarCarritosAbandonados,
+  getEstadisticasCarritos,
 };

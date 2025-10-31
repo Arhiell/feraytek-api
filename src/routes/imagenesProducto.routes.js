@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const ImagenesProductoController = require("../controllers/imagenesProducto.controller");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 
 // Listar todas las imágenes
 router.get("/", ImagenesProductoController.listar);
@@ -12,9 +13,9 @@ router.get(
 );
 
 // Agregar nueva imagen
-router.post("/", ImagenesProductoController.agregar);
+router.post("/", verifyToken, isAdmin, ImagenesProductoController.agregar);
 
 // Eliminar imagen por ID
-router.delete("/:id_imagen", ImagenesProductoController.eliminar);
+router.delete("/:id_imagen", verifyToken, isAdmin, ImagenesProductoController.eliminar);
 
 module.exports = router;

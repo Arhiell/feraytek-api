@@ -55,7 +55,10 @@ async function registerCliente(req, res, next) {
 // ----------------------------------------------------------------------
 async function registerAdmin(req, res, next) {
   try {
-    const { nombre_usuario, email, password, dni, nombre, apellido, telefono, cargo } = req.body;
+    const { nombre, apellido, email, password, dni, telefono, cargo } = req.body;
+    
+    // Usar el email como nombre_usuario si no se proporciona
+    const nombre_usuario = req.body.nombre_usuario || email;
     
     // Datos para la tabla usuarios
     const userData = { nombre_usuario, email, password };
@@ -142,7 +145,68 @@ async function updateAdminProfile(req, res, next) {
 }
 
 // ----------------------------------------------------------------------
-// Cambiar contraseña
+// Obtener perfil del usuario autenticado (sin ID)
+// ----------------------------------------------------------------------
+async function getProfile(req, res, next) {
+  try {
+    const userId = req.user.id; // Del token JWT
+    const user = await userService.getUserById(userId);
+    res.json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------------------------
+// Actualizar perfil del usuario autenticado (sin ID)
+// ----------------------------------------------------------------------
+async function updateProfile(req, res, next) {
+  try {
+    const userId = req.user.id; // Del token JWT (usar 'id' no 'id_usuario')
+    const { nombre, apellido, telefono, direccion, ciudad, provincia, pais, codigo_postal } = req.body;
+    
+    // Solo datos del cliente (no del usuario base)
+    const clienteData = { nombre, apellido, telefono, direccion, ciudad, provincia, pais, codigo_postal };
+    
+    const result = await userService.updateClienteProfile(userId, {}, clienteData);
+    res.json({ success: true, message: 'Perfil actualizado exitosamente', data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------------------------
+// Cambiar contraseña del usuario autenticado (sin ID)
+// ----------------------------------------------------------------------
+async function updatePassword(req, res, next) {
+  try {
+    const userId = req.user.id; // Del token JWT (usar 'id' no 'id_usuario')
+    const { password_actual, password_nueva, confirmar_password } = req.body;
+    
+    // Validar que las contraseñas nuevas coincidan
+    if (password_nueva !== confirmar_password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Las contraseñas nuevas no coinciden' 
+      });
+    }
+    
+    const result = await userService.changePassword(userId, password_actual, password_nueva);
+    res.json({ 
+      success: true, 
+      message: 'Contraseña actualizada exitosamente. Se ha enviado un email de confirmación.',
+      data: {
+        email_enviado: true,
+        fecha_cambio: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------------------------
+// Cambiar contraseña (versión original con ID)
 // ----------------------------------------------------------------------
 async function changePassword(req, res, next) {
   try {
@@ -173,14 +237,106 @@ async function deleteUser(req, res, next) {
   }
 }
 
+// ----------------------------------------------------------------------
+// Crear el primer superadministrador (solo una vez)
+// ----------------------------------------------------------------------
+async function createFirstSuperAdmin(req, res, next) {
+  try {
+    const { nombre, email, password, telefono } = req.body;
+    
+    // Verificar si ya existe un superadmin
+    const existingSuperAdmin = await userService.checkSuperAdminExists();
+    if (existingSuperAdmin) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ya existe un superadministrador en el sistema' 
+      });
+    }
+    
+    // Datos para la tabla usuarios
+    const userData = { 
+      nombre_usuario: email, // Usar email como nombre de usuario
+      email, 
+      password, 
+      rol: 'superadmin' 
+    };
+    
+    // Datos para la tabla administradores
+    const adminData = { 
+      dni: '00000000', // DNI por defecto
+      nombre: nombre.split(' ')[0] || nombre, // Primer nombre
+      apellido: nombre.split(' ').slice(1).join(' ') || 'Admin', // Resto como apellido
+      telefono, 
+      cargo: 'Superadministrador' 
+    };
+    
+    const result = await userService.createSuperAdmin(userData, adminData);
+    res.status(201).json({ 
+      success: true, 
+      message: 'Superadministrador creado exitosamente', 
+      data: result 
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------------------------
+// Obtener todos los administradores (solo para superadmin)
+// ----------------------------------------------------------------------
+async function getAllAdmins(req, res, next) {
+  try {
+    const admins = await userService.getAllAdmins();
+    res.json({ success: true, data: admins });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------------------------
+// Cambiar estado de administrador (solo para superadmin)
+// ----------------------------------------------------------------------
+async function toggleAdminStatus(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await userService.toggleAdminStatus(id);
+    res.json({ 
+      success: true, 
+      message: result.message,
+      nuevoEstado: result.nuevoEstado 
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ----------------------------------------------------------------------
+// Obtener estadísticas del sistema (solo para superadmin)
+// ----------------------------------------------------------------------
+async function getSystemStats(req, res, next) {
+  try {
+    const stats = await userService.getSystemStats();
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
   registerCliente,
   registerAdmin,
   login,
+  getProfile,
+  updateProfile,
+  updatePassword,
   updateClienteProfile,
   updateAdminProfile,
   changePassword,
-  deleteUser
+  deleteUser,
+  createFirstSuperAdmin,
+  getAllAdmins,
+  toggleAdminStatus,
+  getSystemStats
 };

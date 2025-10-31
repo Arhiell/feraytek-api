@@ -8,6 +8,8 @@
 
 const Pedido = require("../models/pedido.model");
 const Carrito = require("../models/carrito.model");
+const Cliente = require("../models/cliente.model");
+const EnvioModel = require("../models/envio.model");
 const pool = require("../config/database");
 
 // Crear pedido a partir del carrito activo
@@ -50,6 +52,34 @@ async function crearPedidoDesdeCarrito(
   // Insertar detalles de cada producto del carrito
   await Pedido.agregarDetalle(id_pedido, items);
 
+  // Crear envío automáticamente si el método de entrega es envío a domicilio
+  if (metodo_entrega === "envio_domicilio") {
+    try {
+      // Obtener datos del cliente para la dirección de envío
+      const cliente = await Cliente.getByUserId(id_usuario);
+      
+      if (cliente) {
+        const datosEnvio = {
+          id_pedido: id_pedido,
+          destinatario: `${cliente.nombre} ${cliente.apellido}`,
+          direccion_envio: cliente.direccion,
+          ciudad: cliente.ciudad,
+          provincia: cliente.provincia,
+          pais: cliente.pais || "Argentina",
+          codigo_postal: cliente.codigo_postal,
+          empresa_envio: null,
+          numero_seguimiento: null,
+          estado_envio: "preparando"
+        };
+        
+        await EnvioModel.crear(datosEnvio);
+      }
+    } catch (error) {
+      console.error("Error al crear envío automático:", error);
+      // No lanzamos error para no interrumpir la creación del pedido
+    }
+  }
+
   // Vaciar carrito luego de crear pedido
   await Carrito.vaciarCarrito(carrito.id_carrito);
 
@@ -83,8 +113,8 @@ async function obtenerPedidoCompleto(id_pedido) {
 }
 
 // Cambiar estado del pedido
-async function cambiarEstado(id_pedido, nuevoEstado) {
-  await Pedido.actualizarEstado(id_pedido, nuevoEstado);
+async function cambiarEstado(id_pedido, nuevoEstado, id_usuario_admin = null) {
+  await Pedido.actualizarEstado(id_pedido, nuevoEstado, id_usuario_admin);
   return {
     // Retorna un mensaje de confirmación para el frontend o controlador
     message: `Estado del pedido #${id_pedido} actualizado a '${nuevoEstado}'.`,

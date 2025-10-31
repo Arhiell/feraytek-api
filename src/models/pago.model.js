@@ -96,6 +96,138 @@ async function registrarWebhook(id_pago, raw_gateway_json) {
   return true;
 }
 
+// Consultar pagos con filtros y paginación
+async function consultarPagosConFiltros(filtros) {
+  console.log('=== MODELO consultarPagosConFiltros ===');
+  console.log('Filtros recibidos:', filtros);
+  
+  let sql = `
+    SELECT 
+      p.*,
+      pe.fecha_pedido,
+      pe.total as total_pedido,
+      pe.estado as estado_pedido,
+      u.nombre_usuario as nombre_usuario,
+      u.email as email_usuario
+    FROM pagos p
+    LEFT JOIN pedidos pe ON p.id_pedido = pe.id_pedido
+    LEFT JOIN usuarios u ON pe.id_usuario = u.id_usuario
+    WHERE 1=1
+  `;
+  
+  const params = [];
+
+  console.log('SQL inicial:', sql);
+
+  // Aplicar filtros
+  if (filtros.estado) {
+    sql += ` AND p.estado_pago = ?`;
+    params.push(filtros.estado);
+  }
+
+  if (filtros.fecha_desde) {
+    sql += ` AND DATE(p.created_at) >= ?`;
+    params.push(filtros.fecha_desde);
+  }
+
+  if (filtros.fecha_hasta) {
+    sql += ` AND DATE(p.created_at) <= ?`;
+    params.push(filtros.fecha_hasta);
+  }
+
+  if (filtros.id_pedido) {
+    sql += ` AND p.id_pedido = ?`;
+    params.push(filtros.id_pedido);
+  }
+
+  if (filtros.id_usuario) {
+    sql += ` AND pe.id_usuario = ?`;
+    params.push(filtros.id_usuario);
+  }
+
+  if (filtros.monto_min) {
+    sql += ` AND p.monto >= ?`;
+    params.push(filtros.monto_min);
+  }
+
+  if (filtros.monto_max) {
+    sql += ` AND p.monto <= ?`;
+    params.push(filtros.monto_max);
+  }
+
+  // Contar total de registros (construir query separada)
+  let countSql = `
+    SELECT COUNT(*) as total 
+    FROM pagos p
+    LEFT JOIN pedidos pe ON p.id_pedido = pe.id_pedido
+    LEFT JOIN usuarios u ON pe.id_usuario = u.id_usuario
+    WHERE 1=1
+  `;
+  
+  // Agregar los mismos filtros que en la consulta principal
+  if (filtros.estado_pago) {
+    countSql += ` AND p.estado_pago = ?`;
+  }
+  
+  if (filtros.metodo_pago) {
+    countSql += ` AND p.metodo_pago = ?`;
+  }
+  
+  if (filtros.id_pedido) {
+    countSql += ` AND p.id_pedido = ?`;
+  }
+
+  if (filtros.id_usuario) {
+    countSql += ` AND pe.id_usuario = ?`;
+  }
+
+  if (filtros.monto_min) {
+    countSql += ` AND p.monto >= ?`;
+  }
+
+  if (filtros.monto_max) {
+    countSql += ` AND p.monto <= ?`;
+  }
+
+  if (filtros.fecha_desde) {
+    countSql += ` AND DATE(p.created_at) >= ?`;
+  }
+  
+  if (filtros.fecha_hasta) {
+    countSql += ` AND DATE(p.created_at) <= ?`;
+  }
+  
+  console.log('Count SQL:', countSql);
+  const [countRows] = await pool.query(countSql, params);
+  const total = countRows[0].total;
+
+  // Agregar ordenamiento y paginación
+  sql += ` ORDER BY p.created_at DESC`;
+  
+  if (filtros.limit) {
+    sql += ` LIMIT ?`;
+    params.push(parseInt(filtros.limit));
+    
+    if (filtros.offset) {
+      sql += ` OFFSET ?`;
+      params.push(parseInt(filtros.offset));
+    }
+  }
+
+  const [rows] = await pool.query(sql, params);
+  
+  console.log('Consulta ejecutada exitosamente. Filas encontradas:', rows.length);
+  console.log('Total de registros:', total);
+  
+  return {
+    pagos: rows,
+    total: total,
+    pagina: filtros.page || 1,
+    limite: filtros.limit || 10,
+    totalPaginas: Math.ceil(total / (filtros.limit || 10))
+  };
+}
+
 module.exports = {
   crearPago,
   listarPagos,
@@ -104,4 +236,5 @@ module.exports = {
   obtenerPagoPorTransaccion,
   obtenerPagoPorPedido,
   registrarWebhook,
+  consultarPagosConFiltros,
 };

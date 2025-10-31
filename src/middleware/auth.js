@@ -1,31 +1,65 @@
-const jwt = require("jsonwebtoken");
-const config = require("../config/config");
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET || 'feraytek-secret-key';
 const userModel = require("../models/user.model");
 
-// Verificar token JWT
+// Middleware para verificar token JWT
 function verifyToken(req, res, next) {
-  const token = req.headers["authorization"]?.split(" ")[1];
+  console.log('=== MIDDLEWARE AUTH ===');
+  console.log('Headers recibidos:', req.headers);
+  
+  const authHeader = req.headers.authorization;
+  console.log('Auth header:', authHeader);
+  
+  if (!authHeader) {
+    console.log('No se encontró header de autorización');
+    return res.status(401).json({
+      ok: false,
+      message: 'Token de acceso requerido'
+    });
+  }
 
+  const token = authHeader.split(' ')[1]; // Bearer TOKEN
+  console.log('Token extraído:', token);
+  
   if (!token) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Token no proporcionado" });
+    console.log('Token no encontrado después de split');
+    return res.status(401).json({
+      ok: false,
+      message: 'Token de acceso requerido'
+    });
   }
 
   try {
-    const decoded = jwt.verify(token, config.JWT_SECRET);
+    console.log('Verificando token con JWT_SECRET...');
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Token decodificado exitosamente:', decoded);
     req.user = decoded;
+    console.log('Usuario asignado a req.user:', req.user);
+    console.log('=== FIN MIDDLEWARE AUTH - PASANDO AL SIGUIENTE ===');
     next();
   } catch (error) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Token inválido o expirado" });
+    console.error('Error al verificar token:', error);
+    return res.status(401).json({
+      ok: false,
+      message: 'Token inválido o expirado'
+    });
   }
 }
 
-// Verificar si es administrador
+// Verificar si es superadministrador
+function isSuperAdmin(req, res, next) {
+  if (req.user.rol !== "superadmin") {
+    return res.status(403).json({
+      success: false,
+      message: "Acceso denegado. Se requiere rol de superadministrador",
+    });
+  }
+  next();
+}
+
+// Verificar si es administrador (incluye superadmin)
 function isAdmin(req, res, next) {
-  if (req.user.rol !== "admin") {
+  if (req.user.rol !== "admin" && req.user.rol !== "superadmin") {
     return res.status(403).json({
       success: false,
       message: "Acceso denegado. Se requiere rol de administrador",
@@ -38,8 +72,8 @@ function isAdmin(req, res, next) {
 async function isOwnerOrAdmin(req, res, next) {
   const userId = parseInt(req.params.id);
 
-  // Si es administrador, permitir acceso
-  if (req.user.rol === "admin") {
+  // Si es administrador o superadmin, permitir acceso
+  if (req.user.rol === "admin" || req.user.rol === "superadmin") {
     return next();
   }
 
@@ -56,6 +90,7 @@ async function isOwnerOrAdmin(req, res, next) {
 
 module.exports = {
   verifyToken,
+  isSuperAdmin,
   isAdmin,
   isOwnerOrAdmin,
 };

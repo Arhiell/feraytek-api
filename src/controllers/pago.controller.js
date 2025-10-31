@@ -71,11 +71,15 @@ async function listarPagos(req, res) {
 
 // GET /api/pagos/:id
 // Obtiene el detalle completo de un pago por su ID.
+// Solo el propietario del pedido o un administrador pueden ver el pago
 async function obtenerPago(req, res) {
   try {
     //Extrae el parámetro de la ruta
     const { id } = req.params; // ID del pago solicitado
-    const pago = await pagoService.obtenerPagoPorId(id);
+    const usuarioId = req.user.id_usuario; // ID del usuario autenticado
+    const rolUsuario = req.user.rol; // Rol del usuario autenticado
+    
+    const pago = await pagoService.obtenerDetallePago(id);
 
     //Si no se encontró el pago, devuelve 404 (no encontrado)
     if (!pago) {
@@ -85,7 +89,19 @@ async function obtenerPago(req, res) {
       });
     }
 
-    //Si se encuentra el pago, responde con los datos completos
+    // Verificar autorización: solo el propietario del pedido o administradores
+    if (rolUsuario !== 'admin' && rolUsuario !== 'superadmin') {
+      // Obtener el pedido asociado para verificar el propietario
+      const pedido = await pagoService.obtenerPedidoPorId(pago.id_pedido);
+      if (!pedido || pedido.id_usuario !== usuarioId) {
+        return res.status(403).json({
+          ok: false,
+          message: "No tienes permisos para ver este pago.",
+        });
+      }
+    }
+
+    //Si se encuentra el pago y tiene permisos, responde con los datos completos
     return res.status(200).json({
       ok: true,
       data: pago,
@@ -112,6 +128,15 @@ async function actualizarEstadoPago(req, res) {
       return res.status(400).json({
         ok: false,
         message: "Debe indicar el nuevo estado del pago.",
+      });
+    }
+
+    // Validar que el estado sea válido (en español)
+    const estadosValidos = ['pendiente', 'aprobado', 'rechazado', 'cancelado'];
+    if (!estadosValidos.includes(estado)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Estado inválido. Estados válidos: pendiente, aprobado, rechazado, cancelado",
       });
     }
 
@@ -160,10 +185,136 @@ async function recibirWebhook(req, res) {
   }
 }
 
+// POST /api/pagos/simular-aprobacion/:id_transaccion
+// Endpoint para simular la aprobación automática de un pago (para desarrollo/testing)
+async function simularAprobacionPago(req, res) {
+  try {
+    const { id_transaccion } = req.params;
+    
+    if (!id_transaccion) {
+      return res.status(400).json({
+        ok: false,
+        message: "Debe proporcionar el ID de transacción.",
+      });
+    }
+
+    console.log(`🎯 Simulando aprobación automática para transacción: ${id_transaccion}`);
+
+    // Simular el webhook que enviaría Mercado Pago cuando se aprueba un pago
+    const webhookSimulado = {
+      data: {
+        id: id_transaccion
+      },
+      status: "aprobado",
+      type: "payment"
+    };
+
+    // Procesar el webhook simulado
+    const resultado = await pagoService.procesarWebhook(webhookSimulado);
+
+    if (!resultado.ok) {
+      return res.status(400).json(resultado);
+    }
+
+    return res.status(200).json({
+      ok: true,
+      message: "Pago aprobado automáticamente. Se ejecutó el flujo completo: factura + email + PDF.",
+      data: resultado
+    });
+
+  } catch (error) {
+    console.error("Error en simularAprobacionPago:", error);
+    return res.status(500).json({
+      ok: false,
+      message: "Error al simular la aprobación del pago.",
+    });
+  }
+}
+
+// GET /api/pagos/consulta
+// Consulta pagos con filtros para usuarios autenticados
+async function consultarPagos(req, res) {
+  console.log('=== INICIO consultarPagos ===');
+  console.log('Usuario autenticado:', req.user);
+  
+  try {
+    console.log('Usuario:', req.user);
+    
+    const usuarioId = req.user.id; // Cambio: usar 'id' en lugar de 'id_usuario'
+    const rolUsuario = req.user.rol;
+    
+    console.log('Usuario ID:', usuarioId, 'Rol:', rolUsuario);
+    
+    // Extraer parámetros de consulta
+    const { 
+      estado, 
+      fecha_desde, 
+      fecha_hasta, 
+      id_pedido,
+      monto_min,
+      monto_max,
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    console.log('Parámetros de consulta:', req.query);
+
+    // Construir filtros
+    const filtros = {
+      estado,
+      fecha_desde,
+      fecha_hasta,
+      id_pedido,
+      monto_min: monto_min ? parseFloat(monto_min) : undefined,
+      monto_max: monto_max ? parseFloat(monto_max) : undefined,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    };
+
+    // Si no es admin, solo puede ver sus propios pagos
+    if (rolUsuario !== 'admin' && rolUsuario !== 'superadmin') {
+      filtros.id_usuario = usuarioId;
+    }
+
+    console.log('Filtros construidos:', filtros);
+
+    // Llamar al servicio para consultar pagos
+    console.log('Llamando al servicio...');
+    const resultado = await pagoService.consultarPagosConFiltros(filtros);
+    console.log('Resultado del servicio:', resultado);
+
+    return res.status(200).json({
+      ok: true,
+      data: resultado.pagos,
+      pagination: {
+        page: filtros.page,
+        limit: filtros.limit,
+        total: resultado.total,
+        totalPages: Math.ceil(resultado.total / filtros.limit)
+      },
+      message: `Se encontraron ${resultado.total} pagos.`
+    });
+
+  } catch (error) {
+    console.error("=== ERROR EN consultarPagos ===");
+    console.error("Error:", error);
+    console.error("Stack trace:", error.stack);
+    console.error("Error message:", error.message);
+    console.error("=== FIN ERROR ===");
+    return res.status(500).json({
+      ok: false,
+      message: "Error al consultar los pagos.",
+      error: error.message // Agregamos el mensaje de error para debugging
+    });
+  }
+}
+
 module.exports = {
   crearPago,
   listarPagos,
+  consultarPagos,
   obtenerPago,
   actualizarEstadoPago,
   recibirWebhook,
+  simularAprobacionPago,
 };

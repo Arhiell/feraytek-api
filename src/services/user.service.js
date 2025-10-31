@@ -88,19 +88,26 @@ async function registerAdmin(userData, adminData) {
 // Login de usuario
 // ----------------------------------------------------------------------
 async function loginUser(email, password) {
+  console.log('DEBUG LOGIN - Iniciando login para email:', email);
+  
   // Buscar usuario por email
   const user = await userModel.getByEmail(email);
+  console.log('DEBUG LOGIN - Usuario encontrado:', user ? 'Sí' : 'No');
   if (!user) {
     throw createError('Credenciales inválidas', 401);
   }
   
+  console.log('DEBUG LOGIN - Estado del usuario:', user.estado);
   // Verificar si el usuario está activo
   if (user.estado !== 'activo') {
     throw createError('Usuario inactivo. Contacte al administrador.', 403);
   }
   
   // Verificar contraseña
+  console.log('DEBUG LOGIN - Password provided:', password);
+  console.log('DEBUG LOGIN - Password hash from DB:', user.password_hash);
   const passwordMatch = await bcrypt.compare(password, user.password_hash);
+  console.log('DEBUG LOGIN - Password match result:', passwordMatch);
   if (!passwordMatch) {
     throw createError('Credenciales inválidas', 401);
   }
@@ -283,6 +290,164 @@ async function deleteUser(id) {
   };
 }
 
+// ----------------------------------------------------------------------
+// Verificar si ya existe un superadministrador
+// ----------------------------------------------------------------------
+async function checkSuperAdminExists() {
+  const pool = require('../config/database');
+  const [result] = await pool.query(
+    'SELECT COUNT(*) as count FROM usuarios WHERE rol = ?',
+    ['superadmin']
+  );
+  return result[0].count > 0;
+}
+
+// ----------------------------------------------------------------------
+// Crear superadministrador
+// ----------------------------------------------------------------------
+async function createSuperAdmin(userData, adminData) {
+  const pool = require('../config/database');
+  
+  // Verificar si ya existe un superadmin
+  const exists = await checkSuperAdminExists();
+  if (exists) {
+    throw createError('Ya existe un superadministrador en el sistema', 400);
+  }
+  
+  // Verificar si el email ya está en uso
+  const existingUser = await userModel.getByEmail(userData.email);
+  if (existingUser) {
+    throw createError('El email ya está registrado', 400);
+  }
+  
+  // Verificar si el nombre de usuario ya está en uso
+  const existingUsername = await userModel.getByUsername(userData.nombre_usuario);
+  if (existingUsername) {
+    throw createError('El nombre de usuario ya está en uso', 400);
+  }
+  
+  // Encriptar contraseña
+  const hashedPassword = await bcrypt.hash(userData.password, 10);
+  
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // Crear usuario con rol superadmin (usando la columna correcta 'password_hash')
+    const [userResult] = await connection.query(
+      `INSERT INTO usuarios (nombre_usuario, email, password_hash, rol, estado, fecha_registro) 
+       VALUES (?, ?, ?, ?, 'activo', NOW())`,
+      [userData.nombre_usuario, userData.email, hashedPassword, 'superadmin']
+    );
+    
+    const userId = userResult.insertId;
+    
+    // Crear registro en tabla administradores
+    await connection.query(
+      `INSERT INTO administradores (id_usuario, dni, nombre, apellido, telefono, cargo, fecha_contratacion) 
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [userId, adminData.dni, adminData.nombre, adminData.apellido, adminData.telefono, adminData.cargo]
+    );
+    
+    await connection.commit();
+    return { id: userId, ...userData, ...adminData };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+// ----------------------------------------------------------------------
+// Obtener todos los administradores
+// ----------------------------------------------------------------------
+async function getAllAdmins() {
+  const pool = require('../config/database');
+  const [result] = await pool.query(`
+    SELECT 
+      u.id_usuario,
+      u.nombre_usuario,
+      u.email,
+      u.rol,
+      u.estado,
+      u.fecha_registro,
+      a.dni,
+      a.nombre,
+      a.apellido,
+      a.telefono,
+      a.cargo,
+      a.created_at as fecha_contratacion
+    FROM usuarios u
+    INNER JOIN administradores a ON u.id_usuario = a.id_usuario
+    WHERE u.rol IN ('admin', 'superadmin')
+    ORDER BY u.fecha_registro DESC
+  `);
+  return result;
+}
+
+// ----------------------------------------------------------------------
+// Cambiar estado de administrador
+// ----------------------------------------------------------------------
+async function toggleAdminStatus(id) {
+  const pool = require('../config/database');
+  
+  // Verificar que el usuario existe y es admin
+  const [user] = await pool.query(
+    'SELECT * FROM usuarios WHERE id_usuario = ? AND rol IN ("admin", "superadmin")',
+    [id]
+  );
+  
+  if (user.length === 0) {
+    throw createError('Administrador no encontrado', 404);
+  }
+  
+  // No permitir desactivar al superadmin
+  if (user[0].rol === 'superadmin') {
+    throw createError('No se puede cambiar el estado del superadministrador', 400);
+  }
+  
+  // Cambiar estado
+  const nuevoEstado = user[0].estado === 'activo' ? 'inactivo' : 'activo';
+  
+  const [result] = await pool.query(
+    'UPDATE usuarios SET estado = ? WHERE id_usuario = ?',
+    [nuevoEstado, id]
+  );
+  
+  if (result.affectedRows === 0) {
+    throw createError('Error al cambiar el estado del administrador', 500);
+  }
+  
+  return {
+    success: true,
+    message: `Administrador ${nuevoEstado === 'inactivo' ? 'desactivado' : 'activado'} exitosamente`,
+    nuevoEstado
+  };
+}
+
+// ----------------------------------------------------------------------
+// Obtener estadísticas del sistema
+// ----------------------------------------------------------------------
+async function getSystemStats() {
+  const pool = require('../config/database');
+  
+  const [stats] = await pool.query(`
+    SELECT 
+      (SELECT COUNT(*) FROM usuarios WHERE rol = 'cliente') as total_clientes,
+      (SELECT COUNT(*) FROM usuarios WHERE rol = 'admin') as total_admins,
+      (SELECT COUNT(*) FROM usuarios WHERE rol = 'superadmin') as total_superadmins,
+      (SELECT COUNT(*) FROM usuarios WHERE estado = 'activo') as usuarios_activos,
+      (SELECT COUNT(*) FROM usuarios WHERE estado = 'inactivo') as usuarios_inactivos,
+      (SELECT COUNT(*) FROM productos) as total_productos,
+      (SELECT COUNT(*) FROM pedidos) as total_pedidos,
+      (SELECT COUNT(*) FROM facturas) as total_facturas,
+      (SELECT COUNT(*) FROM soporte) as total_tickets_soporte
+  `);
+  
+  return stats[0];
+}
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -292,8 +457,14 @@ module.exports = {
   updateClienteProfile,
   updateAdminProfile,
   changePassword,
-  deleteUser
+  deleteUser,
+  checkSuperAdminExists,
+  createSuperAdmin,
+  getAllAdmins,
+  toggleAdminStatus,
+  getSystemStats
 };
+
 // Helper para crear errores con código HTTP
 function createError(message, status) {
   const err = new Error(message);

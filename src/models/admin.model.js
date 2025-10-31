@@ -106,19 +106,19 @@ async function update(id, adminData) {
     `
     UPDATE administradores
     SET 
-      dni = ?, 
-      nombre = ?, 
-      apellido = ?, 
-      telefono = ?, 
-      cargo = ?
+      dni = COALESCE(?, dni), 
+      nombre = COALESCE(?, nombre), 
+      apellido = COALESCE(?, apellido), 
+      telefono = COALESCE(?, telefono), 
+      cargo = COALESCE(?, cargo)
     WHERE id_admin = ?
     `,
     [
-      dni, 
-      nombre, 
-      apellido, 
-      telefono, 
-      cargo,
+      dni ?? null, 
+      nombre ?? null, 
+      apellido ?? null, 
+      telefono ?? null, 
+      cargo ?? null,
       id
     ]
   );

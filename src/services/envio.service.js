@@ -189,6 +189,73 @@ async function eliminarEnvio(id_envio) {
   }
 }
 
+// Crear envíos para pedidos existentes que no tienen envío
+async function crearEnviosParaPedidosExistentes() {
+  try {
+    // Buscar pedidos que no tienen envío y tienen método de entrega "envio_domicilio"
+    const [pedidosSinEnvio] = await db.query(`
+      SELECT p.id_pedido, p.id_usuario, p.metodo_entrega
+      FROM pedidos p
+      LEFT JOIN envios e ON p.id_pedido = e.id_pedido
+      WHERE e.id_envio IS NULL 
+      AND p.metodo_entrega = 'envio_domicilio'
+    `);
+
+    if (pedidosSinEnvio.length === 0) {
+      return {
+        ok: true,
+        message: "No hay pedidos sin envío que requieran creación de envío.",
+        envios_creados: 0
+      };
+    }
+
+    let enviosCreados = 0;
+    const Cliente = require("../models/cliente.model");
+    const EnvioModel = require("../models/envio.model");
+
+    for (const pedido of pedidosSinEnvio) {
+      try {
+        // Obtener datos del cliente
+        const cliente = await Cliente.getByUserId(pedido.id_usuario);
+        
+        if (cliente && cliente.direccion) {
+          const datosEnvio = {
+            id_pedido: pedido.id_pedido,
+            destinatario: `${cliente.nombre} ${cliente.apellido}`,
+            direccion_envio: cliente.direccion,
+            ciudad: cliente.ciudad,
+            provincia: cliente.provincia,
+            pais: cliente.pais || "Argentina",
+            codigo_postal: cliente.codigo_postal,
+            empresa_envio: null,
+            numero_seguimiento: null,
+            estado_envio: "preparando"
+          };
+          
+          await EnvioModel.crear(datosEnvio);
+          enviosCreados++;
+        }
+      } catch (error) {
+        console.error(`Error al crear envío para pedido ${pedido.id_pedido}:`, error);
+      }
+    }
+
+    return {
+      ok: true,
+      message: `Se crearon ${enviosCreados} envíos para pedidos existentes.`,
+      envios_creados: enviosCreados,
+      pedidos_procesados: pedidosSinEnvio.length
+    };
+  } catch (error) {
+    console.error("Error al crear envíos para pedidos existentes:", error);
+    return {
+      ok: false,
+      message: "Error al crear envíos para pedidos existentes.",
+      error: error.message,
+    };
+  }
+}
+
 module.exports = {
   listarEnvios,
   obtenerEnvio,
@@ -196,4 +263,5 @@ module.exports = {
   actualizarDatosEnvio,
   cambiarEstadoEnvio,
   eliminarEnvio,
+  crearEnviosParaPedidosExistentes,
 };

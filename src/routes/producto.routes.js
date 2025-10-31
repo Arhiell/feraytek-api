@@ -6,6 +6,7 @@ const express = require("express");
 const router = express.Router();
 const ProductoController = require("../controllers/producto.controller");
 const VariantesProductoController = require("../controllers/variantesProducto.controller");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 
 // ----------------------------------------------------------------------
 // Documentación rápida de endpoints:
@@ -22,16 +23,16 @@ const VariantesProductoController = require("../controllers/variantesProducto.co
 // ----------------------------------------------------------------------
 
 // Rutas para productos CRUD
-router.get("/", ProductoController.getAll);
-router.get("/:id", ProductoController.getById);
-router.post("/", ProductoController.create);
-router.put("/:id", ProductoController.update);
-router.delete("/:id", ProductoController.remove);
+router.get("/", ProductoController.getAll); // Público - cualquiera puede ver productos
+router.get("/:id", ProductoController.getById); // Público - cualquiera puede ver un producto
+router.post("/", verifyToken, isAdmin, ProductoController.create); // Solo admins pueden crear
+router.put("/:id", verifyToken, isAdmin, ProductoController.update); // Solo admins pueden actualizar
+router.delete("/:id", verifyToken, isAdmin, ProductoController.remove); // Solo admins pueden eliminar
 
 // Rutas para variantes de productos (anidadas)
-router.get("/:id/variantes", VariantesProductoController.obtenerPorProducto);
-router.post("/:id/variantes", VariantesProductoController.crear);
-router.put("/:id/variantes/:id_variante", VariantesProductoController.actualizar);
-router.delete("/:id/variantes/:id_variante", VariantesProductoController.eliminar);
+router.get("/:id/variantes", VariantesProductoController.obtenerPorProducto); // Público
+router.post("/:id/variantes", verifyToken, isAdmin, VariantesProductoController.crear); // Solo admins
+router.put("/:id/variantes/:id_variante", verifyToken, isAdmin, VariantesProductoController.actualizar); // Solo admins
+router.delete("/:id/variantes/:id_variante", verifyToken, isAdmin, VariantesProductoController.eliminar); // Solo admins
 
 module.exports = router;

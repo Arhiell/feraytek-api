@@ -10,11 +10,13 @@ const authMiddleware = require('../middleware/auth');
 
 // Rutas públicas (sin autenticación) - Para mostrar categorías en el frontend
 router.get('/activas', categoriaController.getActiveCategorias);
-router.get('/stats', categoriaController.getCategoriaStats);
-router.get('/:id', categoriaController.getCategoriaById);
 
 // Rutas protegidas - Solo administradores pueden gestionar categorías
+router.get('/stats', authMiddleware.verifyToken, authMiddleware.isAdmin, categoriaController.getCategoriaStats);
 router.get('/', authMiddleware.verifyToken, authMiddleware.isAdmin, categoriaController.getAllCategorias);
+
+// Ruta pública para obtener categoría por ID (debe ir después de rutas específicas)
+router.get('/:id', categoriaController.getCategoriaById);
 router.post('/', authMiddleware.verifyToken, authMiddleware.isAdmin, categoriaController.createCategoria);
 router.put('/:id', authMiddleware.verifyToken, authMiddleware.isAdmin, categoriaController.updateCategoria);
 

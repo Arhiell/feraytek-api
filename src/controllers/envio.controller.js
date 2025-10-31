@@ -140,6 +140,26 @@ async function eliminarEnvio(req, res) {
   }
 }
 
+// Crear envíos para pedidos existentes
+async function crearEnviosParaPedidosExistentes(req, res) {
+  try {
+    const resultado = await EnvioService.crearEnviosParaPedidosExistentes();
+    
+    if (resultado.ok) {
+      res.status(200).json(resultado);
+    } else {
+      res.status(500).json(resultado);
+    }
+  } catch (error) {
+    console.error("Error en crearEnviosParaPedidosExistentes:", error);
+    res.status(500).json({
+      ok: false,
+      message: "Error interno del servidor.",
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   listarEnvios,
   obtenerEnvio,
@@ -147,4 +167,5 @@ module.exports = {
   actualizarDatosEnvio,
   cambiarEstadoEnvio,
   eliminarEnvio,
+  crearEnviosParaPedidosExistentes,
 };

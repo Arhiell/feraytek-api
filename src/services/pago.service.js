@@ -3,8 +3,20 @@
 // Se encarga de crear preferencias, procesar respuestas y actualizar estados.
 
 const { MercadoPagoConfig, Preference } = require("mercadopago");
-const pagoModel = require("../models/pago.model");
-const pedidoModel = require("../models/pedido.model"); // opcional
+const {
+  crearPago,
+  listarPagos,
+  obtenerPagoPorId,
+  actualizarEstadoPago,
+  obtenerPagoPorTransaccion,
+  obtenerPagoPorPedido,
+  registrarWebhook,
+  consultarPagosConFiltros,
+} = require("../models/pago.model");
+const pedidoModel = require("../models/pedido.model");
+const FacturaService = require("./factura.service");
+const EmailService = require("./email.service");
+const pool = require("../config/database");
 
 require("dotenv").config();
 
@@ -21,7 +33,7 @@ const mpClient = new MercadoPagoConfig({
 async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
   try {
     // Validamos que no exista un pago previo
-    const pagoExistente = await pagoModel.obtenerPagoPorPedido(id_pedido);
+    const pagoExistente = await obtenerPagoPorPedido(id_pedido);
     if (pagoExistente) {
       throw new Error("Ya existe un pago asociado a este pedido.");
     }
@@ -39,9 +51,9 @@ async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
       back_urls: {
         success: "http://localhost:3000/pago/success",
         failure: "http://localhost:3000/pago/failure", 
-        pending: "http://localhost:3000/pago/pending",
+        pending: "http://localhost:3000/pago/pendiente",
       },
-      notification_url: "http://localhost:3000/api/pagos/webhook", // Webhook local (modo sandbox)
+      notification_url: "https://57dd286a51d4.ngrok-free.app/api/pagos/webhook", // Webhook público via ngrok
       binary_mode: true, // El pago se aprueba o rechaza automáticamente
     };
 
@@ -52,8 +64,8 @@ async function crearPreferenciaPago({ id_pedido, descripcion, monto_total }) {
     const id_transaccion = response.id;
     const raw_gateway_json = response;
 
-    // Guardamos el registro en la base de datos
-    const id_pago = await pagoModel.crearPago({
+    // Guardar el pago en la base de datos
+    const id_pago = await crearPago({
       id_pedido,
       metodo_pago: "mercado_pago",
       monto: monto_total,
@@ -96,7 +108,7 @@ async function procesarWebhook(data) {
       throw new Error("Webhook sin ID de transacción válido.");
 
     // Se busca el pago correspondiente en la base de datos usando el id_transaccion
-    const pagoEncontrado = await pagoModel.obtenerPagoPorTransaccion(id_transaccion);
+    const pagoEncontrado = await obtenerPagoPorTransaccion(id_transaccion);
 
     if (!pagoEncontrado) {
       console.warn("Webhook recibido pero no se encontró el pago asociado.");
@@ -107,19 +119,22 @@ async function procesarWebhook(data) {
     let nuevoEstado = "pendiente";
     const statusFromWebhook = data?.status || webhookData?.status;
     
-    if (statusFromWebhook === "approved") {
+    // Mapear estados de inglés a español (para compatibilidad con Mercado Pago)
+    if (statusFromWebhook === "approved" || statusFromWebhook === "aprobado") {
       nuevoEstado = "aprobado";
-    } else if (statusFromWebhook === "rejected") {
+    } else if (statusFromWebhook === "rejected" || statusFromWebhook === "rechazado") {
       nuevoEstado = "rechazado";
-    } else if (statusFromWebhook === "cancelled") {
+    } else if (statusFromWebhook === "cancelled" || statusFromWebhook === "cancelado") {
       nuevoEstado = "cancelado";
+    } else if (statusFromWebhook === "pending" || statusFromWebhook === "pendiente") {
+      nuevoEstado = "pendiente";
     }
 
-    // Actualizar estado del pago
-    await pagoModel.actualizarEstadoPago(pagoEncontrado.id_pago, nuevoEstado);
+    // Actualizar estado del pago usando la función que ya tiene el flujo automático
+    await actualizarEstadoPago(pagoEncontrado.id_pago, nuevoEstado);
 
     // Registrar datos crudos del webhook
-    await pagoModel.registrarWebhook(pagoEncontrado.id_pago, data);
+    await registrarWebhook(pagoEncontrado.id_pago, data);
 
     return { ok: true, message: "Webhook procesado correctamente." };
   } catch (error) {
@@ -130,20 +145,41 @@ async function procesarWebhook(data) {
 
 // Consultar pagos registrados
 async function obtenerTodosLosPagos() {
-  const pagos = await pagoModel.listarPagos();
+  const pagos = await listarPagos();
   return pagos;
 }
 
 // Obtener detalle de un pago por ID
-async function obtenerPagoPorId(id_pago) {
-  const pago = await pagoModel.obtenerPagoPorId(id_pago);
+async function obtenerDetallePago(id_pago) {
+  const pago = await obtenerPagoPorId(id_pago);
   if (!pago) throw new Error("Pago no encontrado.");
   return pago;
 }
 
-// Actualizar estado de pago (manual o administrativo)
-async function actualizarEstadoPago(id_pago, estado) {
-  return await pagoModel.actualizarEstadoPago(id_pago, estado);
+// Obtener información de un pedido por ID
+// ----------------------------------------------------------------------
+async function obtenerPedidoPorId(id_pedido) {
+  try {
+    const [rows] = await pool.query('SELECT * FROM pedidos WHERE id_pedido = ?', [id_pedido]);
+    return rows[0];
+  } catch (error) {
+    console.error(`Error al obtener pedido ${id_pedido}:`, error);
+    throw error;
+  }
+}
+
+// Consultar pagos con filtros - wrapper del modelo
+// ----------------------------------------------------------------------
+async function consultarPagosConFiltrosService(filtros) {
+  try {
+    console.log('Consultando pagos con filtros:', filtros);
+    const resultado = await consultarPagosConFiltros(filtros);
+    console.log('Resultado de consulta:', resultado);
+    return resultado;
+  } catch (error) {
+    console.error('Error en consultarPagosConFiltrosService:', error);
+    throw error;
+  }
 }
 
 // ======================================================================
@@ -153,6 +189,7 @@ module.exports = {
   crearPreferenciaPago,
   procesarWebhook,
   obtenerTodosLosPagos,
-  obtenerPagoPorId,
-  actualizarEstadoPago,
+  obtenerDetallePago,
+  consultarPagosConFiltros: consultarPagosConFiltrosService,
+  obtenerPedidoPorId,
 };

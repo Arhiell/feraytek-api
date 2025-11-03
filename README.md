@@ -4,7 +4,6 @@
 ![estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow?style=flat-square)
 ![stack](https://img.shields.io/badge/stack-Node.js%20%7C%20Express%20%7C%20Docker%20%7C%20MySQL-6DA55F?style=flat-square&logo=node.js)
 ![licencia](https://img.shields.io/badge/licencia-MIT-lightgrey?style=flat-square)
-![autor](https://img.shields.io/badge/autor-Arhiell-ff69b4?style=flat-square)
 
 API backend oficial del ecosistema Feraytek. Orquesta la comunicación entre las aplicaciones cliente (Web y Escritorio) y la base de datos MySQL mediante endpoints REST seguros, autenticación JWT y una arquitectura limpia basada en MVC + Service Layer.
 

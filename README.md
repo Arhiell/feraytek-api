@@ -1,13 +1,34 @@
 # 🚀 Feraytek API
 
+![version](https://img.shields.io/badge/version-v0.1.0-blue?style=flat-square)
+![estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow?style=flat-square)
+![stack](https://img.shields.io/badge/stack-Node.js%20%7C%20Express%20%7C%20Docker%20%7C%20MySQL-6DA55F?style=flat-square&logo=node.js)
+![licencia](https://img.shields.io/badge/licencia-MIT-lightgrey?style=flat-square)
+![autor](https://img.shields.io/badge/autor-Arhiell-ff69b4?style=flat-square)
+
+API backend oficial del ecosistema Feraytek. Orquesta la comunicación entre las aplicaciones cliente (Web y Escritorio) y la base de datos MySQL mediante endpoints REST seguros, autenticación JWT y una arquitectura limpia basada en MVC + Service Layer.
+
+## 📚 Tabla de Contenidos
+- [Descripción General](#-descripción-general)
+- [Arquitectura de la API](#-arquitectura-de-la-api)
+- [Dependencias y Librerías](#-dependencias-y-librerías)
+- [Estructura del Proyecto](#-estructura-del-proyecto)
+- [Instalación y Configuración](#-instalación-y-configuración)
+- [Uso con Docker](#-uso-con-docker)
+- [Endpoints Principales](#-endpoints-principales)
+- [Integración con las Aplicaciones Cliente](#-integración-con-las-aplicaciones-cliente)
+- [Pruebas](#-pruebas)
+- [Seguridad](#-seguridad)
+- [Autores y Créditos](#-autores-y-créditos)
+- [Licencia](#-licencia)
+- [Enlaces Oficiales](#-enlaces-oficiales)
+
 > **Backend RESTful API del ecosistema Feraytek** - Núcleo de comunicación entre base de datos MySQL y aplicaciones cliente (Escritorio y Web)
 
 ![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)
 ![Status](https://img.shields.io/badge/status-En%20desarrollo-yellow.svg)
 ![Stack](https://img.shields.io/badge/stack-Node.js%20%7C%20Express%20%7C%20Docker%20%7C%20MySQL-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)
-![Author](https://img.shields.io/badge/author-Arhiell-orange.svg)
-
 ---
 
 ## 🧠 Descripción General
@@ -35,6 +56,44 @@ La API sirve como backend para dos aplicaciones principales:
 ---
 
 ## 🧱 Arquitectura de la API
+
+Diagrama conceptual (ASCII):
+
+```
+                ┌───────────────────────────┐
+                │      Clientes Feraytek    │
+                │                           │
+   ┌────────────┴─────────────┐  ┌──────────┴───────────┐
+   │ Escritorio (Electron)    │  │ Web (Tienda Online)  │
+   │ Panel administrativo     │  │ Catálogo, carrito     │
+   └────────────┬─────────────┘  └──────────┬───────────┘
+                │  HTTP/HTTPS (REST, JSON)  │
+                └────────────┬──────────────┘
+                             ▼
+                     ┌─────────────────┐
+                     │  Feraytek API   │  Node.js + Express
+                     │  (Controllers)  │  JWT, CORS, Helmet
+                     └───────┬─────────┘
+                             │ delega
+                             ▼
+                     ┌─────────────────┐
+                     │ Service Layer    │  Reglas de negocio
+                     └───────┬─────────┘
+                             │ consulta
+                             ▼
+                     ┌─────────────────┐
+                     │  Data Access     │  mysql2 / ORM
+                     └───────┬─────────┘
+                             │ SQL
+                             ▼
+                     ┌─────────────────┐
+                     │     MySQL DB     │
+                     └─────────────────┘
+```
+
+Diagrama SVG (opcional) para documentación visual:
+
+![Arquitectura Feraytek](docs/architecture.svg)
 
 La API sigue el patrón **MVC + Service Layer** para garantizar escalabilidad y mantenibilidad:
 
@@ -544,42 +603,6 @@ refactor: refactorización de código
 test: agregar o modificar tests
 chore: tareas de mantenimiento
 ```
-
-### 🧪 Requisitos para PRs
-
-- [ ] Tests pasando (`npm run test`)
-- [ ] Linting sin errores (`npm run lint`)
-- [ ] Documentación actualizada
-- [ ] Descripción clara del cambio
-
----
-
-## 🆘 Soporte y Contacto
-
-### 🐛 Reportar Bugs
-
-Si encuentras un bug, por favor:
-
-1. Verifica que no esté ya reportado en [Issues](https://github.com/Arhiell/feraytek-api/issues)
-2. Crea un nuevo issue con:
-   - Descripción detallada del problema
-   - Pasos para reproducir
-   - Versión de Node.js y sistema operativo
-   - Logs relevantes
-
-### 💡 Solicitar Funcionalidades
-
-Para solicitar nuevas funcionalidades:
-
-1. Abre un [Feature Request](https://github.com/Arhiell/feraytek-api/issues/new?template=feature_request.md)
-2. Describe claramente la funcionalidad deseada
-3. Explica el caso de uso y beneficios
-
-### 📧 Contacto Directo
-
-- **Email**: ariel.fernandez@feraytek.com
-- **Issues**: [GitHub Issues](https://github.com/Arhiell/feraytek-api/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Arhiell/feraytek-api/discussions)
 
 ---
 

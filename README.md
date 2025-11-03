@@ -1,370 +1,611 @@
 # 🚀 Feraytek API
 
-**Feraytek API** es la interfaz oficial del sistema **Feraytek**, diseñada para gestionar la comunicación entre la base de datos relacional MySQL y las aplicaciones cliente del ecosistema (Web y Escritorio).  
-Su principal propósito es ofrecer un servicio robusto, seguro y escalable para el manejo de usuarios, productos, pedidos, pagos y estadísticas dentro de la plataforma.
+> **Backend RESTful API del ecosistema Feraytek** - Núcleo de comunicación entre base de datos MySQL y aplicaciones cliente (Escritorio y Web)
+
+![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)
+![Status](https://img.shields.io/badge/status-En%20desarrollo-yellow.svg)
+![Stack](https://img.shields.io/badge/stack-Node.js%20%7C%20Express%20%7C%20Docker%20%7C%20MySQL-green.svg)
+![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)
+![Author](https://img.shields.io/badge/author-Arhiell-orange.svg)
 
 ---
 
-## 🧩 Propósito de la API
+## 🧠 Descripción General
 
-Esta API constituye el **núcleo backend del sistema Feraytek**, brindando endpoints RESTful para:
+La **Feraytek API** es el núcleo del sistema Feraytek, actuando como interfaz de comunicación entre la **base de datos MySQL** y las aplicaciones cliente. Esta API RESTful proporciona servicios de autenticación, gestión de productos, procesamiento de pedidos, estadísticas y administración de usuarios.
 
-- Gestionar la información de productos, usuarios, pedidos y categorías.
-- Controlar las operaciones administrativas y comerciales.
-- Proveer autenticación segura mediante **JWT**.
-- Integrar estadísticas dinámicas y reportes para el panel de administración.
+### 🔗 Integración del Ecosistema
 
-Desarrollada bajo arquitectura **MVC** y utilizando **Node.js**, **Express** y **MySQL**, la API garantiza una separación clara de responsabilidades, manteniendo un entorno modular y fácil de mantener.
+La API sirve como backend para dos aplicaciones principales:
 
----
+1. **🖥️ Aplicación de Escritorio (Panel Administrativo)** - Desarrollada con Electron
+   - Repositorio: [`Feraytek`](https://github.com/Arhiell/Feraytek.git) <mcreference link="https://github.com/Arhiell/Feraytek.git" index="0">0</mcreference>
+   - Funciones: Administración, estadísticas, gestión de inventario
 
-## 🔗 Enlaces del ecosistema
+2. **💻 Aplicación Web (Tienda Online)** - Frontend para clientes
+   - Repositorio: [`FeraytekWeb`](https://github.com/Arhiell/FeraytekWeb.git)
+   - Funciones: Catálogo, carrito de compras, procesamiento de pagos
 
-<div align="center">
-
-| Aplicación | Repositorio |
-|-------------|-------------|
-| 🛍️ **Aplicación Web – Tienda Online** | [Ver repositorio »](https://github.com/tu-usuario/feraytek-web) |
-| 🖥️ **Aplicación de Escritorio – Panel Administrativo (Electron)** | [Ver repositorio »](https://github.com/tu-usuario/feraytek-desktop) |
-
-</div>
-
----
-
-## 🧾 Información general
-
-- **Lenguaje principal:** JavaScript (Node.js)  
-- **Framework:** Express.js  
-- **Base de datos:** MySQL  
-- **Arquitectura:** MVC + Service Layer  
-- **Autenticación:** JSON Web Tokens (JWT)
-
----
-
-### 👥 Autores
-
-| Nombre | Rol | GitHub |
-|--------|------|---------|
-| **Ariel Fernández** | Desarrollador Backend y Coordinador del proyecto | 🔗 [@Arhiell](https://github.com/Arhiell) |
-| **Leonel Fernández** | Desarrollador Frontend y Tester | 🔗 [@fernandez-leonel](https://github.com/fernandez-leonel) |
-
-
-> © 2025 **Feraytek Systems** – Proyecto académico desarrollado con fines educativos y de integración tecnológica.
-# 🛒 Feraytek — Plataforma e‑commerce con Panel Administrativo
-
-![Feraytek](https://img.shields.io/badge/Feraytek-eCommerce%20%2B%20Admin-FF6F61?style=for-the-badge) 
-![Versión](https://img.shields.io/badge/version-v0.1.0-blue?style=flat-square)
-![Estado](https://img.shields.io/badge/estado-En%20desarrollo-yellow?style=flat-square)
-![Licencia](https://img.shields.io/badge/licencia-MIT-green?style=flat-square)
-![Autor](https://img.shields.io/badge/autor-Arhiell-8A2BE2?style=flat-square)
-![Stack](https://img.shields.io/badge/Stack-Node.js%20%7C%20Express%20%7C%20Electron%20%7C%20Docker%20%7C%20MySQL-333?style=flat-square)
-
-Plataforma integral que combina un sitio web de comercio electrónico para clientes y una aplicación de escritorio para administración y análisis, construida con tecnologías modernas y una arquitectura modular escalable.
-
----
-
-## 🚀 Descripción General
-
-Feraytek es un sistema de gestión de e‑commerce con dos componentes principales:
-
-- Aplicación de Escritorio (Administrador y SuperAdmin): desarrollada con Node.js y Electron, empaquetada y orquestada con Docker bajo arquitectura MVC. Permite administrar usuarios, productos, pedidos, pagos, inventario y estadísticas.
-- Aplicación Web (Cliente / Usuario Final): desarrollada con Node.js, Express, HTML, CSS y JavaScript. Enfocada en la experiencia de compra, catálogo y seguimiento de pedidos.
-
-Ambas aplicaciones se integran mediante servicios y una base de datos MySQL. El panel administrativo alimenta los datos del frontend web a través de APIs REST, manteniendo consistencia y trazabilidad.
-
----
-
-## 🧱 Arquitectura General
-
-- Patrón MVC (Modelo‑Vista‑Controlador) aplicado a ambos proyectos para separar responsabilidades y favorecer el mantenimiento.
-- Backend con Node.js y Express expone endpoints REST para el panel y el sitio web.
-- Persistencia en MySQL, con conexión mediante driver `mysql2` (o un ORM a elección) y migraciones controladas.
-- Aplicación de escritorio con Electron: proceso principal (main) y renderers, integrando la UI del panel con los servicios backend.
-- Contenedores Docker para base de datos y servicios auxiliares; `docker-compose` simplifica la orquestación local.
-- Comunicación entre servicios vía HTTP/REST y, opcionalmente, WebSockets para notificaciones en tiempo real.
-
-Diagrama conceptual (simplificado):
+### 📊 Flujo de Comunicación
 
 ```
-[Electron Admin] --HTTP--> [API Express] --SQL--> [MySQL]
-        |                                ^
-        |                                |
-        +---- Admin UI ----> Gestiona datos que sirven al Front Web
-                                        |
-[Cliente Web (Express + HTML/CSS/JS)] ---+
+[Apps Cliente] → HTTP REST → [Controladores] → [Servicios] → [Modelos] → [MySQL Database]
+```
+
+---
+
+## 🧱 Arquitectura de la API
+
+La API sigue el patrón **MVC + Service Layer** para garantizar escalabilidad y mantenibilidad:
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Apps Cliente  │    │   Feraytek API  │    │  MySQL Database │
+│                 │    │                 │    │                 │
+│ • Electron App  │◄──►│ • Controllers   │◄──►│ • feraytek_db   │
+│ • Web App       │    │ • Services      │    │ • Tablas        │
+│ • Mobile (fut.) │    │ • Models        │    │ • Relaciones    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 🔐 Capas de Seguridad
+
+- **Autenticación JWT**: Tokens seguros para sesiones de usuario
+- **Middleware de Validación**: Verificación de roles y permisos
+- **CORS Configurado**: Acceso restringido a dominios autorizados
+- **Encriptación**: Contraseñas hasheadas con bcrypt
+
+---
+
+## ⚙️ Dependencias y Librerías
+
+### 📦 Core Dependencies
+
+```bash
+npm install express dotenv mysql2 cors helmet bcrypt jsonwebtoken morgan winston multer uuid cookie-parser
+```
+
+### 🛠️ Development Dependencies
+
+```bash
+npm install --save-dev nodemon jest supertest
+```
+
+### 📋 Descripción de Dependencias
+
+| Librería | Propósito | Versión |
+|----------|-----------|---------|
+| `express` | Framework web para Node.js | ^4.18.0 |
+| `mysql2` | Cliente MySQL con soporte para Promises | ^3.6.0 |
+| `jsonwebtoken` | Generación y verificación de JWT | ^9.0.0 |
+| `bcrypt` | Encriptación de contraseñas | ^5.1.0 |
+| `cors` | Configuración de Cross-Origin Resource Sharing | ^2.8.5 |
+| `helmet` | Middleware de seguridad HTTP | ^7.0.0 |
+| `morgan` | Logger de peticiones HTTP | ^1.10.0 |
+| `winston` | Sistema de logging avanzado | ^3.8.0 |
+| `multer` | Manejo de archivos multipart/form-data | ^1.4.5 |
+| `dotenv` | Gestión de variables de entorno | ^16.3.0 |
+
+---
+
+## 🧰 Estructura del Proyecto
+
+```
+Feraytek-API/
+├─ src/
+│  ├─ config/
+│  │  ├─ db.js              # Configuración de base de datos
+│  │  ├─ env.js             # Variables de entorno
+│  │  └─ cors.js            # Configuración CORS
+│  ├─ models/
+│  │  ├─ User.js            # Modelo de usuarios
+│  │  ├─ Product.js         # Modelo de productos
+│  │  ├─ Order.js           # Modelo de pedidos
+│  │  └─ Category.js        # Modelo de categorías
+│  ├─ controllers/
+│  │  ├─ authController.js  # Autenticación y autorización
+│  │  ├─ userController.js  # Gestión de usuarios
+│  │  ├─ productController.js # Gestión de productos
+│  │  └─ orderController.js # Gestión de pedidos
+│  ├─ routes/
+│  │  ├─ auth.js            # Rutas de autenticación
+│  │  ├─ users.js           # Rutas de usuarios
+│  │  ├─ products.js        # Rutas de productos
+│  │  └─ orders.js          # Rutas de pedidos
+│  ├─ middlewares/
+│  │  ├─ auth.js            # Middleware de autenticación
+│  │  ├─ validation.js      # Validación de datos
+│  │  └─ errorHandler.js    # Manejo de errores
+│  ├─ services/
+│  │  ├─ authService.js     # Lógica de negocio - Auth
+│  │  ├─ emailService.js    # Servicio de correos
+│  │  └─ paymentService.js  # Integración con Mercado Pago
+│  ├─ utils/
+│  │  ├─ logger.js          # Configuración de Winston
+│  │  ├─ helpers.js         # Funciones auxiliares
+│  │  └─ constants.js       # Constantes de la aplicación
+│  └─ app.js                # Configuración principal de Express
+├─ .env.example             # Plantilla de variables de entorno
+├─ .gitignore               # Archivos ignorados por Git
+├─ package.json             # Dependencias y scripts
+├─ README.md                # Documentación principal
+└─ server.js                # Punto de entrada de la aplicación
 ```
 
 ---
 
 ## ⚙️ Instalación y Configuración
 
-Clona cada repositorio y prepara el entorno.
-
-### 1) Aplicación de Escritorio (Administrador)
-
-Repositorio: https://github.com/Arhiell/Feraytek.git
+### 1️⃣ Clonar el Repositorio
 
 ```bash
-git clone https://github.com/Arhiell/Feraytek.git
-cd Feraytek
-npm install
-
-# Entorno de desarrollo
-npm start
-
-# (Opcional) Ejecutar servicios con Docker
-docker-compose up -d
+git clone https://github.com/Arhiell/feraytek-api.git
+cd feraytek-api
 ```
 
-### 2) Aplicación Web (Cliente)
-
-Repositorio: https://github.com/Arhiell/FeraytekWeb.git
+### 2️⃣ Instalar Dependencias
 
 ```bash
-git clone https://github.com/Arhiell/FeraytekWeb.git
-cd FeraytekWeb
 npm install
-
-# Entorno de desarrollo
-npm start
-
-# (Opcional) Ejecutar servicios con Docker
-docker-compose up -d
 ```
 
-### Variables de entorno (.env)
+### 3️⃣ Configurar Variables de Entorno
 
-Ejemplo para Escritorio (Admin):
+Crea un archivo `.env` basado en `.env.example`:
 
 ```env
-# Núcleo
+# Configuración del Servidor
 NODE_ENV=development
 PORT=3001
-JWT_SECRET=supersecret_cambiar
+API_VERSION=v1
 
-# Base de datos MySQL
+# Base de Datos MySQL
 DB_HOST=localhost
-DB_PORT=3306
 DB_USER=feraytek_user
 DB_PASSWORD=feraytek_pass
 DB_NAME=feraytek_db
+DB_PORT=3306
 
-# Electron
-ELECTRON_START_URL=http://localhost:3001
+# Autenticación JWT
+JWT_SECRET=tu_jwt_secret_super_seguro_aqui
+JWT_EXPIRES_IN=7d
 
-# Integraciones (ejemplo Mercado Pago - sandbox)
-MP_ACCESS_TOKEN=TEST-xxxxxxxxxxxxxxxxxxxx
-MP_PUBLIC_KEY=TEST-xxxxxxxxxxxxxxxxxxxx
+# CORS y Seguridad
+CORS_ORIGIN=http://localhost:3000,http://localhost:8080
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 
-# CORS
-CORS_ORIGIN=http://localhost:3000
+# Servicios Externos
+MERCADOPAGO_ACCESS_TOKEN=tu_mercadopago_token
+EMAIL_SERVICE_API_KEY=tu_email_service_key
+
+# Configuración de Archivos
+UPLOAD_PATH=./uploads
+MAX_FILE_SIZE=5242880
+
+# Logging
+LOG_LEVEL=info
+LOG_FILE=./logs/app.log
 ```
 
-Ejemplo para Web (Cliente):
+### 4️⃣ Inicializar Base de Datos
+
+```bash
+# Crear base de datos y tablas
+mysql -u root -p < docs/database-schema.sql
+
+# O usar el script de inicialización
+npm run db:init
+```
+
+### 5️⃣ Iniciar el Servidor
+
+```bash
+# Desarrollo (con nodemon)
+npm run dev
+
+# Producción
+npm start
+
+# Con PM2 (recomendado para producción)
+npm run start:pm2
+```
+---
+
+## 🔌 Endpoints Principales
+
+### 🔐 Autenticación
+
+```http
+POST /api/v1/auth/register     # Registrar nuevo usuario
+POST /api/v1/auth/login        # Iniciar sesión (devuelve JWT)
+POST /api/v1/auth/logout       # Cerrar sesión
+POST /api/v1/auth/refresh      # Renovar token JWT
+POST /api/v1/auth/forgot       # Recuperar contraseña
+```
+
+### 👥 Usuarios
+
+```http
+GET    /api/v1/users           # Listar usuarios (Admin)
+GET    /api/v1/users/:id       # Obtener usuario específico
+PUT    /api/v1/users/:id       # Actualizar usuario
+DELETE /api/v1/users/:id       # Eliminar usuario (Admin)
+GET    /api/v1/users/profile   # Perfil del usuario autenticado
+```
+
+### 📦 Productos
+
+```http
+GET    /api/v1/products        # Listar productos (público)
+GET    /api/v1/products/:id    # Obtener producto específico
+POST   /api/v1/products        # Crear producto (Admin)
+PUT    /api/v1/products/:id    # Actualizar producto (Admin)
+DELETE /api/v1/products/:id    # Eliminar producto (Admin)
+GET    /api/v1/products/search # Buscar productos
+```
+
+### 🛒 Pedidos
+
+```http
+GET    /api/v1/orders          # Listar pedidos del usuario
+GET    /api/v1/orders/:id      # Obtener pedido específico
+POST   /api/v1/orders          # Crear nuevo pedido
+PUT    /api/v1/orders/:id      # Actualizar estado (Admin)
+DELETE /api/v1/orders/:id      # Cancelar pedido
+```
+
+### 📊 Estadísticas (Admin)
+
+```http
+GET    /api/v1/stats/dashboard # Dashboard principal
+GET    /api/v1/stats/sales     # Estadísticas de ventas
+GET    /api/v1/stats/products  # Productos más vendidos
+GET    /api/v1/stats/users     # Estadísticas de usuarios
+```
+
+### 💳 Pagos
+
+```http
+POST   /api/v1/payments/create    # Crear preferencia de pago
+POST   /api/v1/payments/webhook   # Webhook de Mercado Pago
+GET    /api/v1/payments/:id       # Estado del pago
+```
+
+---
+
+## 🧩 Integración con Aplicaciones Cliente
+
+### 🖥️ Aplicación de Escritorio (Electron)
+
+La aplicación de escritorio consume la API para funciones administrativas:
+
+```javascript
+// Ejemplo de configuración en Electron App
+const API_BASE_URL = 'http://localhost:3001/api/v1';
+
+// Autenticación de administrador
+const loginAdmin = async (credentials) => {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(credentials)
+  });
+  
+  const data = await response.json();
+  localStorage.setItem('adminToken', data.token);
+  return data;
+};
+
+// Obtener estadísticas del dashboard
+const getDashboardStats = async () => {
+  const token = localStorage.getItem('adminToken');
+  const response = await fetch(`${API_BASE_URL}/stats/dashboard`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  return await response.json();
+};
+```
+
+### 💻 Aplicación Web (Cliente)
+
+La aplicación web consume endpoints públicos y de usuario:
+
+```javascript
+// Configuración para la tienda online
+const API_BASE_URL = 'http://localhost:3001/api/v1';
+
+// Obtener productos para el catálogo
+const getProducts = async (page = 1, limit = 12) => {
+  const response = await fetch(`${API_BASE_URL}/products?page=${page}&limit=${limit}`);
+  return await response.json();
+};
+
+// Crear pedido
+const createOrder = async (orderData) => {
+  const token = localStorage.getItem('userToken');
+  const response = await fetch(`${API_BASE_URL}/orders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(orderData)
+  });
+  
+  return await response.json();
+};
+
+// Procesar pago con Mercado Pago
+const processPayment = async (paymentData) => {
+  const response = await fetch(`${API_BASE_URL}/payments/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(paymentData)
+  });
+  
+  return await response.json();
+};
+```
+
+### 🔗 URLs Base Recomendadas
 
 ```env
-NODE_ENV=development
-PORT=3000
+# Desarrollo
+API_BASE_URL=http://localhost:3001/api/v1
 
-# API del panel (Express)
-API_BASE_URL=http://localhost:3001/api
-
-# Autenticación
-JWT_PUBLIC_KEY=MI_PUBLIC_KEY_O_SECRETO_COMPARTIDO
-
-# CORS
-CORS_ORIGIN=http://localhost:3000
-```
-
-### Docker Compose (ejemplo)
-
-```yaml
-version: "3.8"
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: feraytek-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: feraytek_db
-      MYSQL_USER: feraytek_user
-      MYSQL_PASSWORD: feraytek_pass
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  db_data:
+# Producción
+API_BASE_URL=https://api.feraytek.com/api/v1
 ```
 
 ---
 
-## 🧭 Estructura del Proyecto
+## 🔐 Seguridad
 
-Estructuras orientativas para mantener coherencia entre ambos repositorios.
+### 🛡️ Medidas Implementadas
 
-### Escritorio (Feraytek)
+- **JWT Authentication**: Tokens seguros con expiración configurable
+- **Password Hashing**: Bcrypt con salt rounds configurables
+- **CORS Policy**: Restricción de dominios autorizados
+- **Rate Limiting**: Prevención de ataques de fuerza bruta
+- **Input Validation**: Sanitización de datos de entrada
+- **SQL Injection Protection**: Uso de prepared statements
+- **XSS Protection**: Headers de seguridad con Helmet
 
-```
-Feraytek/
-├─ src/
-│  ├─ models/
-│  ├─ controllers/
-│  ├─ routes/
-│  ├─ views/
-│  ├─ config/
-│  ├─ services/
-│  ├─ middlewares/
-│  ├─ utils/
-│  └─ app.js
-├─ electron/
-│  ├─ main.js
-│  └─ preload.js
-├─ docker/
-│  └─ docker-compose.yml
-├─ logs/
-└─ README.md
-```
+### 🔑 Uso de JWT
 
-### Web (FeraytekWeb)
+```javascript
+// Ejemplo de middleware de autenticación
+const jwt = require('jsonwebtoken');
 
-```
-FeraytekWeb/
-├─ src/
-│  ├─ routes/
-│  ├─ controllers/
-│  ├─ models/
-│  ├─ middlewares/
-│  ├─ public/
-│  │  ├─ css/
-│  │  ├─ js/
-│  │  └─ img/
-│  ├─ views/
-│  ├─ config/
-│  └─ app.js
-├─ logs/
-└─ README.md
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Token de acceso requerido' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: 'Token inválido' });
+    }
+    req.user = user;
+    next();
+  });
+};
 ```
 
-- Sistema de logs: `winston` o `morgan` para auditoría de peticiones y errores.
-- Middleware: `cors`, `helmet`, validaciones, autenticación y manejo de errores centralizado.
+### 🔒 Protección de Endpoints
+
+```javascript
+// Ejemplo de protección por roles
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+    return res.status(403).json({ 
+      message: 'Acceso denegado. Se requieren permisos de administrador.' 
+    });
+  }
+  next();
+};
+
+// Uso en rutas
+router.get('/stats/dashboard', authenticateToken, requireAdmin, getDashboardStats);
+```
 
 ---
 
-## 🧪 Tecnologías Principales
+## 📊 Monitoreo y Logs
 
-- Node.js, Express, Electron, Docker, MySQL
-- JavaScript, HTML, CSS
-- Librerías auxiliares: `dotenv`, `cors`, `helmet`, `jsonwebtoken`, `bcrypt`, `mysql2`, `multer`, `winston/morgan`
-- Integraciones: pasarela de pago (ej. Mercado Pago en sandbox), servicios de terceros.
+### 📝 Sistema de Logging
 
----
+```javascript
+// Configuración de Winston
+const winston = require('winston');
 
-## 🧰 Características Clave
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
+    new winston.transports.Console({
+      format: winston.format.simple()
+    })
+  ]
+});
+```
 
-- Roles: Administrador, SuperAdmin y Cliente.
-- Gestión de usuarios, productos, pedidos, pagos y estadísticas.
-- Panel de administración con control total (catálogo, stock, descuentos, facturación, reportes).
-- Sitio web responsive para el cliente, optimizado para búsqueda y compra.
-- Integración de APIs (ej. Mercado Pago, sandbox) para pagos.
-- Módulo de reportes y visualización de métricas clave.
+### 📈 Métricas y Monitoreo
 
----
-
-## 📸 Capturas de Pantalla
-
-Agrega tus imágenes en `docs/screenshots/` y referencia aquí:
-
-- Login (Admin):
-  
-  ![Login Admin](docs/screenshots/login-admin.png)
-
-- Dashboard (Admin):
-
-  ![Dashboard Admin](docs/screenshots/dashboard-admin.png)
-
-- Productos (Admin):
-
-  ![Productos Admin](docs/screenshots/products-admin.png)
-
-- Pedidos y Estadísticas (Admin):
-
-  ![Pedidos y Estadísticas](docs/screenshots/orders-stats.png)
-
-- Interfaz del Cliente (Web):
-
-  ![Catálogo Cliente](docs/screenshots/client-catalog.png)
+- **Request Logging**: Morgan para logs de peticiones HTTP
+- **Error Tracking**: Winston para manejo centralizado de errores
+- **Performance Monitoring**: Métricas de tiempo de respuesta
+- **Health Checks**: Endpoint `/health` para verificar estado del servicio
 
 ---
 
-## 🌐 Enlaces Oficiales
+## 🚀 Despliegue
 
-- 🖥️ Escritorio (Admin): Feraytek — GitHub → https://github.com/Arhiell/Feraytek
-- 💻 Web (Cliente): FeraytekWeb — GitHub → https://github.com/Arhiell/FeraytekWeb
+### 🌐 Producción
 
----
+```bash
+# Construir para producción
+npm run build
 
-## 👥 Autores y Créditos
+# Iniciar con PM2
+npm run start:pm2
 
-- Autor principal: Ariel (Arhiell)
-- GitHub: https://github.com/Arhiell
-- Colaboradores: _agregar aquí si aplica_
+# Verificar estado
+pm2 status feraytek-api
+```
 
----
+### 🔧 Variables de Entorno de Producción
 
-## 🧾 Licencia
-
-Este proyecto está bajo la licencia MIT. Consulta el archivo `LICENSE` para más detalles.
-
-- MIT: https://opensource.org/licenses/MIT
-
----
-
-## 🧱 Estado del Proyecto
-
-- Estado actual: En desarrollo (versión beta).
-- Próximos pasos:
-  - Autenticación multifactor (2FA) para Administradores.
-  - Notificaciones en tiempo real (WebSockets) para eventos críticos.
-  - Mejoras en reportes (exportación a CSV/PDF).
-  - Optimizaciones de rendimiento y seguridad.
+```env
+NODE_ENV=production
+PORT=3001
+DB_HOST=your-production-db-host
+JWT_SECRET=your-super-secure-jwt-secret
+CORS_ORIGIN=https://feraytek.com,https://admin.feraytek.com
+```
 
 ---
 
-## 🧠 Contribución
+## 🧾 Autores y Créditos
 
-¡Contribuciones son bienvenidas! Sigue estos pasos:
+| Nombre | Rol | GitHub | LinkedIn |
+|--------|-----|--------|----------|
+| **Ariel Fernández** | Desarrollador Full Stack & API Architect | [@Arhiell](https://github.com/Arhiell) | [Perfil](https://linkedin.com/in/ariel-fernandez) |
+| **Leonel Fernández** | Desarrollador Full Stack & Database Design | [@fernandez-leonel](https://github.com/fernandez-leonel) | [Perfil](https://linkedin.com/in/leonel-fernandez) |
 
-1. Realiza un fork del repositorio.
-2. Crea una rama feature: `git checkout -b feat/nueva-funcionalidad`.
-3. Haz commits siguiendo buenas prácticas: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`.
-4. Abre un Pull Request describiendo cambios, contexto y pruebas.
+### 🎓 Contexto Académico
 
-Guías sugeridas:
-
-- Estilo de commits: https://www.conventionalcommits.org/es/v1.0.0/
-- Issues y PRs: agrega etiquetas y una descripción clara.
-
----
-
-## 🧩 Soporte y Contacto
-
-- Reporta errores o solicitudes en la sección de Issues:
-  - Feraytek (Admin): https://github.com/Arhiell/Feraytek/issues
-  - FeraytekWeb (Cliente): https://github.com/Arhiell/FeraytekWeb/issues
-
-- Para consultas generales: abre un Issue o agrega comentarios en los PRs.
+**Proyecto desarrollado en el marco de:**
+- 📘 **Materia**: Trabajo Final Integrador y Metodología de Investigación II
+- 👨‍🏫 **Profesor**: Lic. Marco Sosca
+- 🏛️ **Institución**: Universidad Tecnológica Nacional — Facultad Regional Resistencia
+- 🎯 **Carrera**: Técnico Universitario en Programación
 
 ---
 
-## ✅ Notas
+## 📄 Licencia
 
-- Este README está orientado a documentación técnica en español neutro.
-- Adapta variables y puertos a tu entorno.
-- Asegura la creación y migración del esquema MySQL antes de iniciar.
+Este proyecto está licenciado bajo la **Licencia MIT** - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+```
+MIT License
+
+Copyright (c) 2025 Feraytek Development Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+---
+
+## 🤝 Contribución
+
+### 🔄 Proceso de Contribución
+
+1. **Fork** el repositorio
+2. Crear una **rama feature** (`git checkout -b feature/nueva-funcionalidad`)
+3. **Commit** los cambios (`git commit -m 'feat: agregar nueva funcionalidad'`)
+4. **Push** a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abrir un **Pull Request**
+
+### 📝 Convenciones de Commits
+
+Seguimos la especificación [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: nueva funcionalidad
+fix: corrección de bug
+docs: cambios en documentación
+style: cambios de formato (no afectan funcionalidad)
+refactor: refactorización de código
+test: agregar o modificar tests
+chore: tareas de mantenimiento
+```
+
+### 🧪 Requisitos para PRs
+
+- [ ] Tests pasando (`npm run test`)
+- [ ] Linting sin errores (`npm run lint`)
+- [ ] Documentación actualizada
+- [ ] Descripción clara del cambio
+
+---
+
+## 🆘 Soporte y Contacto
+
+### 🐛 Reportar Bugs
+
+Si encuentras un bug, por favor:
+
+1. Verifica que no esté ya reportado en [Issues](https://github.com/Arhiell/feraytek-api/issues)
+2. Crea un nuevo issue con:
+   - Descripción detallada del problema
+   - Pasos para reproducir
+   - Versión de Node.js y sistema operativo
+   - Logs relevantes
+
+### 💡 Solicitar Funcionalidades
+
+Para solicitar nuevas funcionalidades:
+
+1. Abre un [Feature Request](https://github.com/Arhiell/feraytek-api/issues/new?template=feature_request.md)
+2. Describe claramente la funcionalidad deseada
+3. Explica el caso de uso y beneficios
+
+### 📧 Contacto Directo
+
+- **Email**: ariel.fernandez@feraytek.com
+- **Issues**: [GitHub Issues](https://github.com/Arhiell/feraytek-api/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Arhiell/feraytek-api/discussions)
+
+---
+
+## 🔗 Enlaces Relacionados
+
+### 📱 Repositorios del Ecosistema Feraytek
+
+- 🖥️ **Aplicación de Escritorio**: [Feraytek](https://github.com/Arhiell/Feraytek.git)
+- 💻 **Aplicación Web**: [FeraytekWeb](https://github.com/Arhiell/FeraytekWeb.git)
+- 🚀 **API Backend**: [Feraytek-API](https://github.com/Arhiell/feraytek-api) (este repositorio)
+
+### 📚 Documentación Adicional
+
+- 📖 [Documentación de API](docs/api-docs.md)
+- 🗄️ [Esquema de Base de Datos](docs/database-schema.sql)
+- 🔧 [Guía de Configuración](docs/setup-guide.md)
+- 🚀 [Guía de Despliegue](docs/deployment-guide.md)
+
+---
+
+<div align="center">
+
+**💻 Desarrollado por el equipo Feraytek**
+
+*Universidad Tecnológica Nacional - Facultad Regional Resistencia*
+
+**© 2025 - Feraytek Development Team**
+
+</div>

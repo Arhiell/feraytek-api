@@ -33,7 +33,7 @@ async function verificarDatos(req, res) {
 async function crearDesdeCarrito(req, res) {
   try {
     // Extrae datos de la solicitud
-    const id_usuario = req.user.id; // ID del usuario desde el JWT token
+    const id_usuario = req.user.id || req.user.id_usuario; // ID del usuario desde el JWT token
     const { metodo_entrega, costo_envio, notas } = req.body;
 
     // Llama al servicio para generar el pedido completo
@@ -63,7 +63,7 @@ async function crearDesdeCarrito(req, res) {
 // ----------------------------------------------------------------------
 async function obtenerPedidosUsuario(req, res) {
   try {
-    const id_usuario = req.user.id; // Obtiene el ID del usuario del token JWT
+    const id_usuario = req.user.id || req.user.id_usuario; // Obtiene el ID del usuario del token JWT
     const pedidos = await PedidoService.listarPedidos(id_usuario);
     res.status(200).json({ 
       ok: true, 
@@ -84,9 +84,13 @@ async function obtenerPedidosUsuario(req, res) {
 // ----------------------------------------------------------------------
 async function listar(req, res) {
   try {
-    const id_usuario = req.query.id_usuario || 1;
-    const pedidos = await PedidoService.listarPedidos(id_usuario);
-    res.status(200).json({ ok: true, data: pedidos });
+    const { id_usuario } = req.query;
+    let pedidos;
+    if (id_usuario) {
+      pedidos = await PedidoService.listarPedidos(id_usuario);
+    } else {
+      pedidos = await PedidoModel.listarTodosPedidos();
+    }res.status(200).json({ ok: true, data: pedidos });
   } catch (error) {
     res.status(400).json({ ok: false, message: error.message });
   }
@@ -99,14 +103,18 @@ async function listar(req, res) {
 async function detalle(req, res) {
   try {
     const id_pedido = req.params.id;
-    const usuarioId = req.user.id;
+    const usuarioId = req.user.id || req.user.id_usuario;
     const esAdmin = req.user.rol === 'admin' || req.user.rol === 'superadmin';
     
     // Llama al servicio para obtener pedido + ítems
     const pedido = await PedidoService.obtenerPedidoCompleto(id_pedido);
     
     // Validar permisos: solo el propietario del pedido o un admin pueden verlo
-    if (!esAdmin && pedido.id_usuario !== usuarioId) {
+    let propietarioId = pedido && pedido.id_usuario;
+    if (!propietarioId) {
+      propietarioId = await PedidoModel.obtenerUsuarioDePedido(id_pedido);
+    }
+    if (!esAdmin && propietarioId !== usuarioId) {
       return res.status(403).json({
         ok: false,
         message: "No tienes permisos para ver este pedido.",
@@ -134,7 +142,7 @@ async function actualizarEstado(req, res) {
   try {
     const id_pedido = req.params.id;
     const { estado } = req.body;
-    const id_usuario_admin = req.user.id; // ID del admin que está cambiando el estado
+    const id_usuario_admin = req.user.id || req.user.id_usuario; // ID del admin que está cambiando el estado
     
     const resultado = await PedidoService.cambiarEstado(id_pedido, estado, id_usuario_admin);
     res.status(200).json({ ok: true, message: resultado.message });

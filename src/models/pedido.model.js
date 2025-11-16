@@ -21,11 +21,11 @@ async function crearPedido({
   notas,
 }) {
   const connection = await pool.getConnection();
-  
+
   try {
     // Iniciar transacción para asegurar consistencia
     await connection.beginTransaction();
-    
+
     // Ejecuta una consulta SQL para insertar un nuevo registro en la tabla "pedidos"
     const [result] = await connection.query(
       `INSERT INTO pedidos (id_usuario, subtotal, descuento_total, costo_envio, total, metodo_entrega, notas)
@@ -40,19 +40,19 @@ async function crearPedido({
         notas || null, // Observaciones opcionales (se guarda null si no hay)
       ]
     );
-    
+
     const nuevoPedidoId = result.insertId;
-    
-    // 🚀 AUTOMÁTICO: Crear registro inicial en historial_pedidos
+
+    // AUTOMÁTICO: Crear registro inicial en historial_pedidos
     await connection.query(
       `INSERT INTO historial_pedidos (id_pedido, estado_anterior, estado_nuevo, id_usuario, fecha_cambio)
        VALUES (?, NULL, 'pendiente', ?, NOW())`,
       [nuevoPedidoId, id_usuario]
     );
-    
+
     // Confirmar transacción
     await connection.commit();
-    
+
     return nuevoPedidoId;
   } catch (error) {
     // Revertir transacción en caso de error
@@ -75,7 +75,7 @@ async function agregarDetalle(id_pedido, items) {
       // Inserta cada detalle en la tabla "pedido_detalle"
       await pool.query(
         `INSERT INTO pedido_detalle 
-         (id_pedido, id_producto, id_variante, cantidad, precio_unitario, iva_porcentaje, iva_monto)
+         (id_pedido, p.id_usuario, id_producto, id_variante, cantidad, precio_unitario, iva_porcentaje, iva_monto)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           id_pedido,
@@ -165,49 +165,98 @@ async function obtenerDetallePedido(id_pedido) {
   return rows;
 }
 
+//lista de todo los pedidos
+async function listarTodosPedidos() {
+  try {
+    const [pedidos] = await pool.query(
+      `SELECT 
+         p.id_pedido,
+         p.id_usuario,
+         p.fecha_pedido,
+         p.total,
+         p.estado,
+         p.metodo_entrega
+       FROM pedidos AS p
+       ORDER BY p.fecha_pedido DESC`
+    );
+
+    for (const pedido of pedidos) {
+      const [detalles] = await pool.query(
+        `SELECT 
+           d.id_detalle,
+           d.id_producto,
+           pr.nombre AS nombre_producto,
+           d.cantidad,
+           d.precio_unitario,
+           d.iva_porcentaje,
+           d.iva_monto
+         FROM pedido_detalle AS d
+         JOIN productos AS pr ON d.id_producto = pr.id_producto
+         WHERE d.id_pedido = ?`,
+        [pedido.id_pedido]
+      );
+      pedido.detalles = detalles;
+    }
+
+    return pedidos;
+  } catch (error) {
+    console.error("Error al listar todos los pedidos:", error);
+    throw new Error("No se pudieron obtener los pedidos.");
+  }
+}
+
+// Obtener el usuario propietario de un pedido (cabecera)
+async function obtenerUsuarioDePedido(id_pedido) {
+  const [rows] = await pool.query(
+    `SELECT id_usuario FROM pedidos WHERE id_pedido = ?`,
+    [id_pedido]
+  );
+  if (rows.length === 0) return null;
+  return rows[0].id_usuario;
+}
+
 // Actualizar estado del pedido (por ejemplo: 'pagado', 'enviado', 'cancelado', etc.)
 async function actualizarEstado(id_pedido, nuevoEstado, id_usuario = null) {
   const connection = await pool.getConnection();
-  
+
   try {
     // Iniciar transacción para asegurar consistencia
     await connection.beginTransaction();
-    
+
     // 🔍 Obtener el estado actual antes de actualizarlo
     const [pedidoActual] = await connection.query(
       `SELECT estado, id_usuario FROM pedidos WHERE id_pedido = ?`,
       [id_pedido]
     );
-    
+
     if (pedidoActual.length === 0) {
       throw new Error(`Pedido con ID ${id_pedido} no encontrado`);
     }
-    
+
     const estadoAnterior = pedidoActual[0].estado;
     const usuarioPedido = id_usuario || pedidoActual[0].id_usuario;
-    
+
     // Solo actualizar si el estado es diferente
     if (estadoAnterior !== nuevoEstado) {
       // Ejecuta una consulta SQL para actualizar el estado del pedido
       await connection.query(
         `UPDATE pedidos 
-         SET estado = ?,                -- Nuevo estado del pedido
-             updated_at = CURRENT_TIMESTAMP  -- Actualiza la fecha de modificación
+         SET estado = ?
          WHERE id_pedido = ?`,
         [nuevoEstado, id_pedido]
       );
-      
-      // 🚀 AUTOMÁTICO: Crear registro en historial_pedidos
+
+      //  AUTOMÁTICO: Crear registro en historial_pedidos
       await connection.query(
         `INSERT INTO historial_pedidos (id_pedido, estado_anterior, estado_nuevo, id_usuario, fecha_cambio)
          VALUES (?, ?, ?, ?, NOW())`,
         [id_pedido, estadoAnterior, nuevoEstado, usuarioPedido]
       );
     }
-    
+
     // Confirmar transacción
     await connection.commit();
-    
+
     // Devuelve true si la operación se realizó correctamente
     return true;
   } catch (error) {
@@ -246,8 +295,10 @@ module.exports = {
   crearPedido,
   agregarDetalle,
   listarPedidosPorUsuario,
+  listarTodosPedidos,
   obtenerDetallePedido,
   verificarDatosPedidos,
   obtenerPedidosEjemplo,
   actualizarEstado,
+  obtenerUsuarioDePedido,
 };

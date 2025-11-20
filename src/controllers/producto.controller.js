@@ -11,17 +11,16 @@ const ProductoService = require("../services/producto.service");
 // ASYNC AWAIT CON TRY CATCH para manejo de errores pero podemos menejar en middleware que estan los errores generales
 // Pensarlos despues Leo
 async function getAll(req, res) {
-  // Capturamos errores
   try {
-    // Invocamos al servicio de listar productos
-    const productos = await ProductoService.listarProductos();
-    // Devolvemos la respuesta al cliente, ok 200 es correcto con los datos del proeducto
+    const estadoReq = (req.query.estado || 'activo').toLowerCase();
+    const allowed = ['activo', 'inactivo', 'todos'];
+    const estado = allowed.includes(estadoReq) ? estadoReq : 'activo';
+    const productos = await ProductoService.listarProductos(estado);
     res.status(200).json({
       ok: true,
       data: productos,
     });
   } catch (error) {
-    // Error lado del Servidor con mensaje del error
     res.status(500).json({
       ok: false,
       message: error.message,

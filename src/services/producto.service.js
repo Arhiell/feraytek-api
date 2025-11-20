@@ -9,9 +9,8 @@ const Producto = require("../models/producto.model");
 // ----------------------------------------------------------------------
 // Obtener todos los productos
 // ----------------------------------------------------------------------
-async function listarProductos() {
-  // Devuelve todos los productos sin filtros
-  return await Producto.getAll();
+async function listarProductos(estado = 'activo') {
+  return await Producto.getAll(estado);
 }
 
 // ----------------------------------------------------------------------

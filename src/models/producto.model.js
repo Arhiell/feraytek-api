@@ -9,16 +9,18 @@ const pool = require("../config/database");
 // ----------------------------------------------------------------------
 // Obtener todos los productos activos del catálogo
 // ----------------------------------------------------------------------
-async function getAll() {
-  // Consulta SQL para obtener productos con su categoría
-  const [rows] = await pool.query(`
+async function getAll(estado = 'activo') {
+  const baseQuery = `
     SELECT p.*, c.nombre_categoria 
     FROM productos p
     INNER JOIN categorias c ON p.id_categoria = c.id_categoria
-    WHERE p.estado = 'activo'
-    ORDER BY p.id_producto DESC
-  `);
-  return rows; // Devuelve un array de productos
+  `;
+  const whereClause = estado === 'todos' ? '' : 'WHERE p.estado = ?';
+  const orderClause = 'ORDER BY p.id_producto DESC';
+  const query = `${baseQuery} ${whereClause} ${orderClause}`;
+  const params = estado === 'todos' ? [] : [estado];
+  const [rows] = await pool.query(query, params);
+  return rows;
 }
 
 // ----------------------------------------------------------------------

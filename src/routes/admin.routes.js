@@ -64,7 +64,18 @@ router.get('/users/list', async (req, res) => {
     const offset = (page - 1) * limit;
     
     const [users] = await pool.query(
-      'SELECT id_usuario, nombre_usuario, email, rol, estado, fecha_registro FROM usuarios ORDER BY fecha_registro DESC LIMIT ? OFFSET ?',
+      `SELECT 
+         u.id_usuario,
+         c.id_cliente,
+         u.nombre_usuario,
+         u.email,
+         u.rol,
+         u.estado,
+         u.fecha_registro
+       FROM usuarios u
+       LEFT JOIN clientes c ON c.id_usuario = u.id_usuario
+       ORDER BY u.fecha_registro DESC
+       LIMIT ? OFFSET ?`,
       [limit, offset]
     );
     

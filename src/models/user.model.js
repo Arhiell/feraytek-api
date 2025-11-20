@@ -13,9 +13,18 @@ const bcrypt = require('bcryptjs');
 // ----------------------------------------------------------------------
 async function getAll() {
   const [rows] = await pool.query(`
-    SELECT id_usuario, nombre_usuario, email, rol, estado, fecha_registro, ultimo_login
-    FROM usuarios
-    ORDER BY id_usuario DESC
+    SELECT 
+      u.id_usuario,
+      c.id_cliente,
+      u.nombre_usuario,
+      u.email,
+      u.rol,
+      u.estado,
+      u.fecha_registro,
+      u.ultimo_login
+    FROM usuarios u
+    LEFT JOIN clientes c ON c.id_usuario = u.id_usuario
+    ORDER BY u.id_usuario DESC
   `);
   return rows;
 }
@@ -26,9 +35,18 @@ async function getAll() {
 async function getById(id) {
   const [rows] = await pool.query(
     `
-    SELECT id_usuario, nombre_usuario, email, rol, estado, fecha_registro, ultimo_login
-    FROM usuarios
-    WHERE id_usuario = ?
+    SELECT 
+      u.id_usuario,
+      c.id_cliente,
+      u.nombre_usuario,
+      u.email,
+      u.rol,
+      u.estado,
+      u.fecha_registro,
+      u.ultimo_login
+    FROM usuarios u
+    LEFT JOIN clientes c ON c.id_usuario = u.id_usuario
+    WHERE u.id_usuario = ?
     `,
     [id]
   );
@@ -186,8 +204,17 @@ async function remove(id) {
 // Obtener usuarios con filtros avanzados
 async function getAllWithFilters(filters = {}) {
   let query = `
-    SELECT id_usuario, nombre_usuario, email, rol, estado, fecha_registro, ultimo_login
-    FROM usuarios
+    SELECT 
+      u.id_usuario,
+      c.id_cliente,
+      u.nombre_usuario,
+      u.email,
+      u.rol,
+      u.estado,
+      u.fecha_registro,
+      u.ultimo_login
+    FROM usuarios u
+    LEFT JOIN clientes c ON c.id_usuario = u.id_usuario
     WHERE 1=1
   `;
   const params = [];
